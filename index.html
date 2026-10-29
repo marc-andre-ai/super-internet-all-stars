@@ -1,0 +1,5719 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Répare l'Internet ! — Édition Spéciale 6-en-1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+  body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #fff; }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  /* UI Overlays */
+  #ui-layer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+  .pointer-auto { pointer-events: auto; }
+
+  /* Top HUD */
+  #hud { display: none; padding: 10px 14px; background: linear-gradient(180deg, rgba(15,23,42,0.92) 0%, rgba(15,23,42,0) 100%); justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .hud-left, .hud-right { display: flex; align-items: center; gap: 8px; }
+  .badge { background: rgba(30,41,59,0.9); border: 2px solid #f97316; border-radius: 10px; padding: 4px 10px; font-weight: 800; font-size: 12.5px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 6px; }
+  .bar-wrap { width: 80px; height: 12px; background: #334155; border-radius: 6px; overflow: hidden; border: 1px solid #64748b; }
+  .bar-fill { height: 100%; transition: width 0.15s; }
+  #hp-fill { background: linear-gradient(90deg, #ef4444, #22c55e); width: 100%; }
+  #net-fill { background: linear-gradient(90deg, #94a3b8, #38bdf8); width: 0%; }
+  .btn-small { background: #ef4444; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-weight: 800; font-size: 12.5px; cursor: pointer; box-shadow: 0 3px 0 #991b1b; }
+  .btn-small:active { transform: translateY(2px); box-shadow: 0 1px 0 #991b1b; }
+  .btn-cam { background: #0284c7; box-shadow: 0 3px 0 #0369a1; display: none; }
+
+  /* Menu Screen */
+  #menu-screen { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, #1e293b 0%, #090d16 100%); display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 12px; text-align: center; z-index: 20; overflow-y: auto; touch-action: pan-y; }
+  #menu-screen * { touch-action: pan-y; }
+  .hero-badge { background: #f97316; color: #fff; font-weight: 900; font-size: 10px; letter-spacing: 1.5px; padding: 3px 11px; border-radius: 99px; text-transform: uppercase; margin-bottom: 4px; box-shadow: 0 0 15px rgba(249,115,22,0.5); flex-shrink: 0; }
+  h1 { font-size: clamp(20px, 4.5vw, 32px); font-weight: 900; line-height: 1.05; margin-bottom: 4px; background: linear-gradient(135deg, #fde047 0%, #f97316 55%, #ef4444 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; flex-shrink: 0; }
+  .subtitle { color: #94a3b8; font-size: clamp(11px, 2.8vw, 13px); max-width: 450px; margin-bottom: 8px; line-height: 1.25; flex-shrink: 0; }
+
+  .mode-cards { display: flex; flex-direction: column; gap: 6px; width: 100%; max-width: 445px; padding-bottom: 14px; }
+  .mode-card { background: rgba(30,41,59,0.92); border: 2px solid #475569; border-radius: 12px; padding: 7px 11px; text-align: left; cursor: pointer; transition: transform 0.15s, border-color 0.15s; display: flex; align-items: center; gap: 10px; position: relative; overflow: hidden; flex-shrink: 0; }
+  .mode-card:active { transform: scale(0.98); }
+  .mode-card.survival { border-color: #f97316; box-shadow: 0 4px 14px rgba(249,115,22,0.2); }
+  .mode-card.angry { border-color: #eab308; box-shadow: 0 4px 14px rgba(234,179,8,0.2); }
+  .mode-card.flappy { border-color: #a855f7; box-shadow: 0 4px 14px rgba(168,85,247,0.2); }
+  .mode-card.doom { border-color: #ec4899; box-shadow: 0 4px 18px rgba(236,72,153,0.3); }
+  .mode-card.cta6 { border-color: #22c55e; box-shadow: 0 4px 18px rgba(34,197,94,0.3); }
+  .mode-card.pookies { border-color: #facc15; box-shadow: 0 4px 18px rgba(250,204,21,0.35); }
+  .mode-icon { width: 50px; height: 50px; border-radius: 10px; background: #0f172a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+  .mode-info h2 { font-size: 14px; font-weight: 800; margin-bottom: 2px; color: #f8fafc; }
+  .mode-info p { font-size: 10.2px; color: #cbd5e1; line-height: 1.2; }
+  .tag { display: inline-block; font-size: 8.5px; font-weight: 800; padding: 2px 6px; border-radius: 5px; margin-top: 3px; text-transform: uppercase; }
+  .tag-orange { background: #f97316; color: #fff; }
+  .tag-yellow { background: #eab308; color: #0f172a; }
+  .tag-purple { background: #a855f7; color: #fff; }
+  .tag-pink { background: #ec4899; color: #fff; }
+  .tag-green { background: #22c55e; color: #052e16; }
+  .tag-corn { background: #facc15; color: #422006; }
+
+  /* Upgrade / Level-up / Starter Weapon Modal */
+  #modal-screen { position: absolute; inset: 0; background: rgba(9,13,22,0.9); backdrop-filter: blur(6px); display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; z-index: 30; text-align: center; }
+  #modal-title { font-size: 24px; font-weight: 900; color: #fde047; margin-bottom: 6px; }
+  #modal-desc { font-size: 14px; color: #cbd5e1; margin-bottom: 16px; max-width: 370px; line-height: 1.4; }
+  #upgrade-list { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 370px; }
+  .upg-btn { background: #1e293b; border: 2px solid #f97316; border-radius: 12px; padding: 12px 14px; color: #fff; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  .upg-btn:active { transform: scale(0.97); background: #334155; }
+  .upg-icon { font-size: 26px; flex-shrink: 0; }
+
+  /* Toast Banner */
+  #toast { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.95); border: 2px solid #fde047; color: #fde047; padding: 8px 16px; border-radius: 99px; font-weight: 800; font-size: 12.5px; pointer-events: none; opacity: 0; transition: opacity 0.25s; z-index: 15; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.6); }
+</style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+
+<div id="ui-layer">
+  <div id="hud" class="pointer-auto">
+    <div class="hud-left">
+      <div class="badge" id="hud-hp-wrap">
+        <span>👷 HP</span>
+        <div class="bar-wrap"><div id="hp-fill" class="bar-fill"></div></div>
+      </div>
+      <div class="badge" id="hud-net-wrap">
+        <span id="hud-net-icon">📼</span> <span id="hud-net-label">Serveurs</span>
+        <div class="bar-wrap" id="hud-net-bar"><div id="net-fill" class="bar-fill"></div></div>
+      </div>
+    </div>
+    <div class="hud-right">
+      <button class="btn-small btn-cam" id="btn-cam">🔭 VOIR TOUR</button>
+      <div class="badge" id="hud-score">⚡ 0</div>
+      <button class="btn-small" id="btn-menu">MENU</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast">🔥 LES CMS ATTAQUENT !</div>
+
+<!-- MAIN MENU -->
+<div id="menu-screen" class="pointer-auto">
+  <div class="hero-badge">🕹️ SUPER INTERNET ALL-STARS • 6-EN-1 🕹️</div>
+  <h1>SUPER COLOSSE ALL-STARS !</h1>
+  <p class="subtitle">6 jeux complets : <strong>RedTower</strong>, <strong>Angry Beshoï</strong>, <strong>Flappy Roc</strong>, <strong>WHORE PRESS</strong>, <strong>CTA6 : San Sorelos</strong> & <strong>Épluchette Pookies</strong> !</p>
+
+  <div class="mode-cards">
+    <div class="mode-card survival" id="start-survival">
+      <div class="mode-icon">
+        <canvas id="icon-latino" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>1. Survie : RedTower & Duct-Tape</h2>
+        <p>Installe ta <strong>Balliste ou Tourelle</strong> et patche les serveurs éventrés au <strong>Tape Gris</strong> face aux CMS armés de bouteilles de vin !</p>
+        <span class="tag tag-orange">Arme d'aide • Anim Moteur & Tape</span>
+      </div>
+    </div>
+
+    <div class="mode-card angry" id="start-angry">
+      <div class="mode-icon">
+        <canvas id="icon-beshoi" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>2. Angry Beshoï</h2>
+        <p>Dans le <strong>Vignoble</strong> et l'<strong>Entrepôt de Caisses de Vin</strong>, fais s'écrouler les tours sur les cochons WordPress, SilverStripe, PHP & WooCommerce !</p>
+        <span class="tag tag-yellow">Vignoble & Entrepôt • Caméra Suiveuse</span>
+      </div>
+    </div>
+
+    <div class="mode-card flappy" id="start-flappy">
+      <div class="mode-icon">
+        <canvas id="icon-roc" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>3. Flappy Roc</h2>
+        <p>Vole avec le <strong>Designer Pédant à lunettes</strong> entre des bâtiments en <strong>charpente de bois</strong> et des <strong>bunkers atomiques</strong> en béton armé !</p>
+        <span class="tag tag-purple">Bois & Bunkers Atomiques • 1-Tap</span>
+      </div>
+    </div>
+
+    <div class="mode-card doom" id="start-doom">
+      <div class="mode-icon">
+        <canvas id="icon-doom" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>4. WHORE PRESS (DOOM 1993)</h2>
+        <p>FPS 3D Old-School ! Tire des <strong>Patchs d'Extensions Médicaux</strong> sur les <strong>Putes PHP, WordPress & DOS Attackers</strong> pour guérir leurs MST !</p>
+        <span class="tag tag-pink">DOOM 3D Raycaster • 250 HP + Soins</span>
+      </div>
+    </div>
+
+    <div class="mode-card cta6" id="start-cta6">
+      <div class="mode-icon">
+        <canvas id="icon-cta6" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>5. CTA6 : San Sorelos (Chez Colosse)</h2>
+        <p>Vue aérienne <strong>GTA 1-2</strong> au <strong>46 rue du Prince</strong>, puis <strong>1st Person</strong> chez <strong>Colosse</strong> : vole <strong>10 000$+ de laptops</strong> sans te faire pogner par le <strong>concierge en Cat Stevens</strong> et sa <strong>compagne blonde (36E, G-string noir & fouet)</strong> !</p>
+        <span class="tag tag-green">GTA 1-2 + 3D • 46 rue du Prince • 10 000$+</span>
+      </div>
+    </div>
+
+    <div class="mode-card pookies" id="start-pookies">
+      <div class="mode-icon">
+        <canvas id="icon-pookies" width="52" height="52"></canvas>
+      </div>
+      <div class="mode-info">
+        <h2>6. Épluchette Pookies</h2>
+        <p>Dans la <strong>cour de chez Colosse</strong>, <strong>deux filles aux cheveux châtain-brun</strong> transportent en hauteur un <strong>chaudron d'eau chaude et de blé d'inde</strong> : lance son contenu sur les <strong>Pookies (sans-abris voleurs de BBQ et foyer)</strong> — 10 tués pour gagner !</p>
+        <span class="tag tag-corn">🌽 Chaudron d'Eau Chaude • 10 Pookies Tués</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL (STARTER WEAPON / UPGRADE / GAME OVER / VICTORY) -->
+<div id="modal-screen" class="pointer-auto">
+  <div id="modal-title">CHOISIS TON ARME D'AIDE</div>
+  <div id="modal-desc">Installe ton système de défense autour de la RedTower :</div>
+  <div id="upgrade-list"></div>
+</div>
+
+<script>
+// =========================================================
+// AUDIO SYNTHESIZER (Web Audio API)
+// =========================================================
+let audioCtx = null;
+function initAudio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) audioCtx = new AC();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function playSound(type) {
+  if (!audioCtx) return;
+  try {
+    const now = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'shoot') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(160, now + 0.08);
+      gain.gain.setValueAtTime(0.1, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now); osc.stop(now + 0.08);
+    } else if (type === 'shotgun') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(42, now + 0.22);
+      gain.gain.setValueAtTime(0.24, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+      osc.start(now); osc.stop(now + 0.22);
+    } else if (type === 'cure') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(523, now);
+      osc.frequency.setValueAtTime(659, now + 0.06);
+      osc.frequency.setValueAtTime(784, now + 0.12);
+      osc.frequency.setValueAtTime(1046, now + 0.18);
+      gain.gain.setValueAtTime(0.16, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+      osc.start(now); osc.stop(now + 0.3);
+    } else if (type === 'flap') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.exponentialRampToValueAtTime(540, now + 0.11);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.11);
+      osc.start(now); osc.stop(now + 0.11);
+    } else if (type === 'ballista') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(190, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.18);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
+      osc.start(now); osc.stop(now + 0.18);
+    } else if (type === 'tape') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(280, now);
+      osc.frequency.linearRampToValueAtTime(920, now + 0.09);
+      gain.gain.setValueAtTime(0.09, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.09);
+      osc.start(now); osc.stop(now + 0.09);
+    } else if (type === 'hit') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(170, now);
+      osc.frequency.linearRampToValueAtTime(60, now + 0.08);
+      gain.gain.setValueAtTime(0.14, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+      osc.start(now); osc.stop(now + 0.08);
+    } else if (type === 'launch') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(220, now);
+      osc.frequency.exponentialRampToValueAtTime(680, now + 0.22);
+      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
+      osc.start(now); osc.stop(now + 0.22);
+    } else if (type === 'boom') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(140, now);
+      osc.frequency.exponentialRampToValueAtTime(32, now + 0.26);
+      gain.gain.setValueAtTime(0.22, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.26);
+      osc.start(now); osc.stop(now + 0.26);
+    } else if (type === 'powerup') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(420, now);
+      osc.frequency.setValueAtTime(640, now + 0.07);
+      osc.frequency.setValueAtTime(920, now + 0.14);
+      gain.gain.setValueAtTime(0.18, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.26);
+      osc.start(now); osc.stop(now + 0.26);
+    }
+  } catch(e) {}
+}
+
+// =========================================================
+// SPRITE DRAWING HELPERS (Cartoon Canvas Art)
+// =========================================================
+function drawWineBottle(ctx, x, y, scale = 1, tilt = 0.28) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(tilt);
+  ctx.scale(scale, scale);
+
+  ctx.fillStyle = '#14532d';
+  ctx.strokeStyle = '#052e16';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(-5, -6, 10, 18, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-5, -5);
+  ctx.quadraticCurveTo(-5, -10, -2.5, -12);
+  ctx.lineTo(-2.5, -19);
+  ctx.lineTo(2.5, -19);
+  ctx.lineTo(2.5, -12);
+  ctx.quadraticCurveTo(5, -10, 5, -5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#991b1b';
+  ctx.fillRect(-2.8, -20, 5.6, 4.5);
+
+  ctx.fillStyle = '#fef3c7';
+  ctx.fillRect(-4, -2, 8, 9);
+  ctx.fillStyle = '#b91c1c';
+  ctx.fillRect(-3, 0, 6, 2);
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(-3, 3.5, 6, 1.2);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-3, -4);
+  ctx.lineTo(-3, 9);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawLatinoHero(ctx, x, y, r, angle = 0, walkFrame = 0, isPatching = false) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.85, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const footOffset = Math.sin(walkFrame * 0.28) * 5;
+  ctx.fillStyle = '#422006';
+  ctx.beginPath();
+  ctx.arc(-8, r * 0.72 + footOffset, 6, 0, Math.PI * 2);
+  ctx.arc(8, r * 0.72 - footOffset, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#1e3a8a';
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.88, -r * 0.2, r * 1.76, r * 1.05, 10);
+  ctx.fill();
+
+  ctx.fillStyle = '#f97316';
+  ctx.strokeStyle = '#c2410c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.84, -r * 0.25, r * 1.68, r * 0.92, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fde047';
+  ctx.fillRect(-r * 0.65, -r * 0.22, 6, r * 0.85);
+  ctx.fillRect(r * 0.65 - 6, -r * 0.22, 6, r * 0.85);
+  ctx.fillRect(-r * 0.82, r * 0.25, r * 1.64, 5);
+
+  ctx.fillStyle = '#c68642';
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.35, r * 0.68, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-6, -r * 0.38, 4.2, 0, Math.PI * 2);
+  ctx.arc(6, -r * 0.38, 4.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-5, -r * 0.38, 2.2, 0, Math.PI * 2);
+  ctx.arc(7, -r * 0.38, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#171717';
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 0.22);
+  ctx.quadraticCurveTo(-10, -r * 0.24, -13, -r * 0.10);
+  ctx.quadraticCurveTo(-5, -r * 0.14, 0, -r * 0.18);
+  ctx.quadraticCurveTo(5, -r * 0.14, 13, -r * 0.10);
+  ctx.quadraticCurveTo(10, -r * 0.24, 0, -r * 0.22);
+  ctx.fill();
+
+  ctx.fillStyle = '#facc15';
+  ctx.strokeStyle = '#ca8a04';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.52, r * 0.74, Math.PI, 0);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#eab308';
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.9, -r * 0.56, r * 1.8, 6, 3);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#fef08a';
+  ctx.fillRect(-4, -r * 1.22, 8, r * 0.64);
+
+  if (isPatching) {
+    const swing = Math.sin(Date.now() * 0.025) * 0.55;
+    ctx.save();
+    ctx.rotate(swing);
+    ctx.fillStyle = '#94a3b8';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(r * 0.85, -4, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath();
+    ctx.arc(r * 0.85, -4, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  } else {
+    ctx.rotate(angle);
+    ctx.fillStyle = '#94a3b8';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(r * 0.5, -3, 14, 6);
+    ctx.beginPath();
+    ctx.arc(r * 0.5 + 16, 0, 6, 0.5, Math.PI * 2 - 0.5);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawBeshoi(ctx, x, y, r, rot = 0, boosted = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+
+  if (boosted) {
+    const grad = ctx.createRadialGradient(0, 0, r * 0.4, 0, 0, r * 1.6);
+    grad.addColorStop(0, 'rgba(56, 189, 248, 0.7)');
+    grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#0284c7';
+  ctx.beginPath();
+  ctx.arc(0, r * 0.25, r * 0.86, 0, Math.PI);
+  ctx.fill();
+
+  const faceGrad = ctx.createRadialGradient(-r * 0.25, -r * 0.25, r * 0.1, 0, 0, r * 0.9);
+  faceGrad.addColorStop(0, '#a1622f');
+  faceGrad.addColorStop(1, '#7c471e');
+  ctx.fillStyle = faceGrad;
+  ctx.beginPath();
+  ctx.arc(0, 0, r * 0.88, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#451a03';
+  ctx.lineWidth = 2.2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.15, r * 0.89, Math.PI * 1.04, Math.PI * 1.96);
+  ctx.fill();
+
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(0, -r * 0.34, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#fde047';
+  ctx.fillStyle = '#ffffff';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.64, -r * 0.19, r * 0.54, r * 0.38, 4);
+  ctx.roundRect(r * 0.10, -r * 0.19, r * 0.54, r * 0.38, 4);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-r * 0.32, 0, 3.2, 0, Math.PI * 2);
+  ctx.arc(r * 0.38, 0, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#171717';
+  ctx.beginPath();
+  ctx.arc(0, r * 0.12, r * 0.72, 0.15, Math.PI - 0.15);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(0, r * 0.24, r * 0.36, 0, Math.PI);
+  ctx.fill();
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.85, 0);
+  ctx.quadraticCurveTo(-r * 0.5, r * 0.55, -2, r * 0.45);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawPedanticDesignerBird(ctx, x, y, r, pitch = 0, wingPhase = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(pitch);
+
+  const wingY = Math.sin(wingPhase) * 8;
+
+  ctx.fillStyle = '#1e293b';
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.35, -r * 0.1 + wingY * 0.6, r * 0.55, r * 0.26, -0.35, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#090d16';
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.ellipse(0, r * 0.52, r * 0.82, r * 0.56, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.26, r * 0.22);
+  ctx.lineTo(r * 0.26, r * 0.22);
+  ctx.lineTo(0, r * 0.78);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.32, r * 0.2); ctx.lineTo(-r * 0.06, r * 0.8);
+  ctx.moveTo(r * 0.32, r * 0.2); ctx.lineTo(r * 0.06, r * 0.8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#e0ac8b';
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.74, -r * 0.02, 4, 6.5, -0.1, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.74, -r * 0.02, 4, 6.5, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  const skinGrad = ctx.createRadialGradient(-r * 0.15, -r * 0.3, r * 0.1, 0, 0, r * 0.9);
+  skinGrad.addColorStop(0, '#f5d0b5');
+  skinGrad.addColorStop(1, '#d99b78');
+  ctx.fillStyle = skinGrad;
+  ctx.strokeStyle = '#a36a4c';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.7, -r * 0.35);
+  ctx.quadraticCurveTo(-r * 0.72, -r * 0.95, 0, -r * 0.95);
+  ctx.quadraticCurveTo(r * 0.72, -r * 0.95, r * 0.7, -r * 0.35);
+  ctx.quadraticCurveTo(r * 0.68, r * 0.25, 0, r * 0.45);
+  ctx.quadraticCurveTo(-r * 0.68, r * 0.25, -r * 0.7, -r * 0.35);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.72, -r * 0.22);
+  ctx.quadraticCurveTo(-r * 0.82, -r * 0.85, -r * 0.4, -r * 1.02);
+  ctx.quadraticCurveTo(0, -r * 1.15, r * 0.42, -r * 1.02);
+  ctx.quadraticCurveTo(r * 0.82, -r * 0.85, r * 0.72, -r * 0.22);
+  ctx.quadraticCurveTo(r * 0.55, -r * 0.72, 0, -r * 0.68);
+  ctx.quadraticCurveTo(-r * 0.55, -r * 0.72, -r * 0.72, -r * 0.22);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.3, -r * 0.82); ctx.lineTo(-r * 0.2, -r * 1.02);
+  ctx.moveTo(0, -r * 0.8); ctx.lineTo(r * 0.05, -r * 1.05);
+  ctx.moveTo(r * 0.3, -r * 0.82); ctx.lineTo(r * 0.25, -r * 1.0);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.52, -r * 0.25); ctx.lineTo(-r * 0.14, -r * 0.21);
+  ctx.moveTo(r * 0.14, -r * 0.23); ctx.lineTo(r * 0.52, -r * 0.29);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.32, -r * 0.08, 4.5, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(r * 0.32, -r * 0.08, 4.5, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.arc(-r * 0.3, -r * 0.08, 2.2, 0, Math.PI * 2);
+  ctx.arc(r * 0.34, -r * 0.08, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#1c1917';
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+  ctx.lineWidth = 2.8;
+  ctx.beginPath();
+  ctx.roundRect(-r * 0.62, -r * 0.20, r * 0.54, r * 0.25, 2.5);
+  ctx.roundRect(r * 0.08, -r * 0.20, r * 0.54, r * 0.25, 2.5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.08, -r * 0.10); ctx.lineTo(r * 0.08, -r * 0.10);
+  ctx.moveTo(-r * 0.62, -r * 0.12); ctx.lineTo(-r * 0.74, -r * 0.08);
+  ctx.moveTo(r * 0.62, -r * 0.12); ctx.lineTo(r * 0.74, -r * 0.08);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#b47b5c';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(0, -r * 0.08);
+  ctx.lineTo(r * 0.06, r * 0.10);
+  ctx.lineTo(-r * 0.04, r * 0.12);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#7c472b';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.24, r * 0.24);
+  ctx.quadraticCurveTo(0, r * 0.25, r * 0.28, r * 0.19);
+  ctx.stroke();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.ellipse(-r * 0.48, r * 0.42 + wingY, r * 0.52, r * 0.22, -0.25 + wingY * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawEnemyCMS(ctx, x, y, r, type, isPig = false, rot = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+
+  let bg = '#2563eb', bgDark = '#1e3a8a', border = '#93c5fd', label = 'W', sub = 'WordPress';
+  if (type === 'silverstripe') {
+    bg = '#0ea5e9'; bgDark = '#0369a1'; border = '#e0f2fe'; label = 'SS'; sub = 'SilverStripe';
+  } else if (type === 'wordpress') {
+    bg = '#2563eb'; bgDark = '#1d4ed8'; border = '#bfdbfe'; label = 'W'; sub = 'WordPress';
+  } else if (type === 'php') {
+    bg = '#6366f1'; bgDark = '#4338ca'; border = '#c7d2fe'; label = '<?php'; sub = 'PHP 5.2';
+  } else if (type === 'woocommerce') {
+    bg = '#9333ea'; bgDark = '#6b21a8'; border = '#f3e8ff'; label = 'WOO'; sub = 'WooCommerce';
+  }
+
+  if (isPig) {
+    ctx.fillStyle = bg;
+    ctx.strokeStyle = border;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-r * 0.72, -r * 0.72, r * 0.34, 0, Math.PI * 2);
+    ctx.arc(r * 0.72, -r * 0.72, r * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  const grad = ctx.createRadialGradient(-r * 0.3, -r * 0.3, r * 0.1, 0, 0, r);
+  grad.addColorStop(0, border);
+  grad.addColorStop(0.25, bg);
+  grad.addColorStop(1, bgDark);
+  ctx.fillStyle = grad;
+  ctx.strokeStyle = border;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(-r * 0.36, -r * 0.18, r * 0.23, 0, Math.PI * 2);
+  ctx.arc(r * 0.36, -r * 0.18, r * 0.23, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath();
+  ctx.arc(-r * 0.34, -r * 0.16, r * 0.11, 0, Math.PI * 2);
+  ctx.arc(r * 0.34, -r * 0.16, r * 0.11, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.8;
+  ctx.beginPath();
+  ctx.moveTo(-r * 0.62, -r * 0.44);
+  ctx.lineTo(-r * 0.12, -r * 0.25);
+  ctx.moveTo(r * 0.62, -r * 0.44);
+  ctx.lineTo(r * 0.12, -r * 0.25);
+  ctx.stroke();
+
+  if (isPig) {
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.24, r * 0.52, r * 0.34, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(15,23,42,0.45)';
+    ctx.beginPath();
+    ctx.arc(-r * 0.18, r * 0.22, 3, 0, Math.PI * 2);
+    ctx.arc(r * 0.18, r * 0.22, 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `900 ${Math.max(9, Math.floor(r * 0.5))}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, 0, r * 0.32);
+
+  const sway = Math.sin(Date.now() * 0.008 + x * 0.1) * 0.18;
+  ctx.fillStyle = bg;
+  ctx.strokeStyle = border;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(r * 0.95, r * 0.08, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  drawWineBottle(ctx, r * 1.05, r * 0.05, Math.max(0.85, r / 20), 0.32 + sway);
+
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = '800 9.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = '#000';
+  ctx.shadowBlur = 3;
+  ctx.fillText(sub, 0, -r - 7);
+  ctx.restore();
+}
+
+// Render Menu Icons
+window.addEventListener('DOMContentLoaded', () => {
+  const c1 = document.getElementById('icon-latino').getContext('2d');
+  drawLatinoHero(c1, 26, 32, 16, -0.3, 0, true);
+  const c2 = document.getElementById('icon-beshoi').getContext('2d');
+  drawBeshoi(c2, 26, 28, 16, 0, true);
+  const c3 = document.getElementById('icon-roc').getContext('2d');
+  drawPedanticDesignerBird(c3, 26, 28, 17, 0, 0.5);
+  const c4 = document.getElementById('icon-doom').getContext('2d');
+  // Mini DOOM syringe/patch launcher icon
+  c4.fillStyle = '#1e1b4b';
+  c4.fillRect(0, 0, 52, 52);
+  c4.fillStyle = '#ec4899';
+  c4.font = '900 11px monospace';
+  c4.textAlign = 'center';
+  c4.fillText('WHORE', 26, 16);
+  c4.fillStyle = '#fde047';
+  c4.fillText('PRESS', 26, 28);
+  c4.font = '16px sans-serif';
+  c4.fillText('💉🩹', 26, 45);
+
+  const c5 = document.getElementById('icon-cta6').getContext('2d');
+  c5.fillStyle = '#064e3b';
+  c5.fillRect(0, 0, 52, 52);
+  c5.fillStyle = '#fde047';
+  c5.font = '900 10px monospace';
+  c5.textAlign = 'center';
+  c5.fillText('CTA6', 26, 14);
+  c5.fillStyle = '#4ade80';
+  c5.font = '900 8px monospace';
+  c5.fillText('SORELOS', 26, 25);
+  c5.font = '16px sans-serif';
+  c5.fillText('💻🧹', 26, 44);
+
+  const c6 = document.getElementById('icon-pookies').getContext('2d');
+  c6.fillStyle = '#422006';
+  c6.fillRect(0, 0, 52, 52);
+  c6.fillStyle = '#facc15';
+  c6.font = '900 8.5px sans-serif';
+  c6.textAlign = 'center';
+  c6.fillText('POOKIES', 26, 13);
+  c6.fillStyle = '#cbd5e1';
+  c6.fillRect(14, 17, 24, 16);
+  c6.strokeStyle = '#0f172a';
+  c6.lineWidth = 1.5;
+  c6.strokeRect(14, 17, 24, 16);
+  c6.font = '15px sans-serif';
+  c6.fillText('🌽♨️', 26, 45);
+});
+
+// =========================================================
+// CORE GAME ENGINE & FX
+// =========================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let W = window.innerWidth, H = window.innerHeight;
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
+}
+window.addEventListener('resize', resize);
+resize();
+
+let currentMode = 'menu';
+let particles = [];
+let floatingTexts = [];
+let flyingParts = [];
+
+function addParticles(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = 1.5 + Math.random() * 5.5;
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 2 + Math.random() * 4.5, color, life: 1 });
+  }
+}
+function addFloatingText(x, y, text, color = '#fde047') {
+  floatingTexts.push({ x, y, text, color, life: 1 });
+}
+function addFlyingEnginePart(x, y, customIcons = null) {
+  const icons = customIcons || ['⚙️', '🔩', '🔧', '🔥', '💾', '🔌'];
+  const icon = icons[Math.floor(Math.random() * icons.length)];
+  flyingParts.push({
+    x, y,
+    vx: (Math.random() - 0.5) * 6,
+    vy: -3.5 - Math.random() * 3.5,
+    rot: 0,
+    vrot: (Math.random() - 0.5) * 0.3,
+    icon,
+    life: 1
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.opacity = '0'; }, 3000);
+}
+
+// =========================================================
+// MODE 1: SURVIVAL REDTOWER & DUCT-TAPE SERVERS
+// =========================================================
+let surv = {};
+
+function initSurvival() {
+  currentMode = 'survival';
+  particles = []; floatingTexts = []; flyingParts = [];
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'flex';
+  document.getElementById('hud-net-bar').style.display = 'block';
+  document.getElementById('btn-cam').style.display = 'none';
+  document.getElementById('hud-net-icon').textContent = '📼';
+  document.getElementById('hud-net-label').textContent = 'Serveurs Patchés';
+
+  surv = {
+    paused: true,
+    score: 0,
+    wave: 1,
+    internetProgress: 0,
+    router: { x: W / 2, y: H / 2, r: 34, hp: 100, maxHp: 100 },
+    hero: {
+      x: W / 2, y: H / 2 + 68, r: 20,
+      hp: 100, maxHp: 100,
+      speed: 3.7,
+      angle: 0, walkFrame: 0,
+      isPatching: false,
+      fireRate: 24, fireCd: 0,
+      bulletDmg: 18, multiShot: 1,
+      repairSpeed: 1,
+      helpers: []
+    },
+    servers: [],
+    bullets: [],
+    enemyBullets: [],
+    enemies: [],
+    gems: [],
+    xp: 0, xpNext: 6, level: 1,
+    spawnTimer: 0,
+    joy: { active: false, startX: 0, startY: 0, curX: 0, curY: 0, dx: 0, dy: 0 }
+  };
+
+  spawnBrokenServer();
+  updateSurvivalHUD();
+  promptStarterHelperWeapon();
+}
+
+function promptStarterHelperWeapon() {
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = '🛠️ ARME D\'AIDE DE DÉPART !';
+  document.getElementById('modal-desc').textContent = 'Installe gratuitement ta première arme automatique près de la RedTower avant l\'arrivée des CMS :';
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = '';
+
+  const starterChoices = [
+    {
+      icon: '🏹',
+      title: 'Balliste Perce-CMS Lourde',
+      desc: 'Tire d\'énormes câbles harpons qui transpercent plusieurs ennemis d\'un coup !',
+      type: 'ballista'
+    },
+    {
+      icon: '🗼',
+      title: 'Tourelle Mitrailleuse RJ45',
+      desc: 'Tir rapide automatique à 360° pour repousser WordPress et SilverStripe !',
+      type: 'turret'
+    },
+    {
+      icon: '⚡',
+      title: 'Canon Tesla Anti-PHP',
+      desc: 'Électrocute les ennemis proches avec des décharges haute-tension !',
+      type: 'tesla'
+    }
+  ];
+
+  starterChoices.forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'upg-btn';
+    btn.innerHTML = `<span class="upg-icon">${ch.icon}</span><div><div>${ch.title}</div><div style="font-size:11.5px;color:#94a3b8;font-weight:500;">${ch.desc}</div></div>`;
+    btn.onclick = () => {
+      playSound('powerup');
+      surv.hero.helpers.push({
+        type: ch.type,
+        x: surv.router.x + 58,
+        y: surv.router.y - 25,
+        angle: 0,
+        cd: 0
+      });
+      modal.style.display = 'none';
+      surv.paused = false;
+      showToast('📼 Va près du Serveur qui fume pour le patcher au Tape Gris !');
+    };
+    list.appendChild(btn);
+  });
+
+  modal.style.display = 'flex';
+}
+
+function spawnBrokenServer() {
+  const margin = 65;
+  let sx, sy, tries = 0;
+  do {
+    sx = margin + Math.random() * (W - margin * 2);
+    sy = margin + 45 + Math.random() * (H - margin * 2 - 70);
+    tries++;
+  } while (Math.hypot(sx - surv.router.x, sy - surv.router.y) < 110 && tries < 25);
+
+  const tapeStrips = [
+    { x1: -18, y1: -16, x2: 18, y2: -6, threshold: 15 },
+    { x1: 18, y1: -14, x2: -16, y2: 2, threshold: 35 },
+    { x1: -19, y1: 4, x2: 19, y2: 14, threshold: 55 },
+    { x1: -15, y1: 18, x2: 17, y2: 6, threshold: 75 },
+    { x1: -12, y1: -20, x2: 14, y2: 20, threshold: 92 }
+  ];
+
+  surv.servers.push({
+    x: sx,
+    y: sy,
+    w: 46,
+    h: 56,
+    progress: 0,
+    shake: 0,
+    tapeStrips
+  });
+}
+
+function spawnSurvivalEnemy() {
+  const types = ['wordpress', 'silverstripe', 'php', 'woocommerce'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const edge = Math.floor(Math.random() * 4);
+  let x, y;
+  if (edge === 0) { x = Math.random() * W; y = -30; }
+  else if (edge === 1) { x = W + 30; y = Math.random() * H; }
+  else if (edge === 2) { x = Math.random() * W; y = H + 30; }
+  else { x = -30; y = Math.random() * H; }
+
+  const waveScale = 1 + (surv.wave - 1) * 0.22;
+  let hp = 30 * waveScale, speed = 1.22, r = 18, shootCd = 0;
+
+  if (type === 'wordpress') { hp = 26 * waveScale; speed = 1.48; r = 17; }
+  if (type === 'silverstripe') { hp = 38 * waveScale; speed = 1.32; r = 19; }
+  if (type === 'php') { hp = 32 * waveScale; speed = 1.08; r = 19; shootCd = 110; }
+  if (type === 'woocommerce') { hp = 72 * waveScale; speed = 0.85; r = 24; }
+
+  surv.enemies.push({ x, y, r, hp, maxHp: hp, speed, type, shootCd });
+}
+
+function triggerSurvivalLevelUp() {
+  surv.paused = true;
+  playSound('powerup');
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = `⚡ NIVEAU ${surv.level} !`;
+  document.getElementById('modal-desc').textContent = `Améliore ton équipement de chantier :`;
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = '';
+
+  const options = [
+    {
+      icon: '🏹',
+      title: 'Installer une Balliste Lourde',
+      desc: 'Pose une nouvelle balliste perce-armure à ta position actuelle',
+      fn: () => { surv.hero.helpers.push({ type: 'ballista', x: surv.hero.x, y: surv.hero.y, angle: 0, cd: 0 }); }
+    },
+    {
+      icon: '🗼',
+      title: 'Installer une Tourelle RJ45',
+      desc: 'Pose une tourelle mitrailleuse automatique à ta position',
+      fn: () => { surv.hero.helpers.push({ type: 'turret', x: surv.hero.x, y: surv.hero.y, angle: 0, cd: 0 }); }
+    },
+    {
+      icon: '📼',
+      title: 'Rouleau de Tape Gris Industriel',
+      desc: 'Patche les serveurs +50% plus vite & +1 câble tiré par ton héros',
+      fn: () => { surv.hero.repairSpeed += 0.5; surv.hero.multiShot++; }
+    },
+    {
+      icon: '🌮',
+      title: 'Pause Tacos & Ruban Isolant',
+      desc: 'Restaure 100% des PV du héros et de la RedTower',
+      fn: () => { surv.hero.hp = surv.hero.maxHp; surv.router.hp = surv.router.maxHp; }
+    }
+  ];
+
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'upg-btn';
+    btn.innerHTML = `<span class="upg-icon">${opt.icon}</span><div><div>${opt.title}</div><div style="font-size:11.5px;color:#94a3b8;font-weight:500;">${opt.desc}</div></div>`;
+    btn.onclick = () => {
+      opt.fn();
+      modal.style.display = 'none';
+      surv.paused = false;
+      updateSurvivalHUD();
+    };
+    list.appendChild(btn);
+  });
+  modal.style.display = 'flex';
+}
+
+function endSurvivalGame(victory) {
+  surv.paused = true;
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = victory ? '🏆 TOUS LES SERVEURS SONT TAPÉS !' : '💥 CRASH SERVEUR GÉNÉRAL !';
+  document.getElementById('modal-desc').textContent = victory
+    ? `Grâce à ton Tape Gris, Internet tient debout ! Score: ${surv.score}`
+    : `Les CMS ont fait sauter le datacenter à ${Math.floor(surv.internetProgress)}%... Score: ${surv.score}`;
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = `
+    <button class="upg-btn" onclick="initSurvival()"><span class="upg-icon">🔄</span><div>Rejouer Survie RedTower</div></button>
+    <button class="upg-btn" onclick="initDoom()"><span class="upg-icon">💉</span><div>Jouer à WHORE PRESS (DOOM)</div></button>
+    <button class="upg-btn" onclick="goMenu()"><span class="upg-icon">🏠</span><div>Retour au Menu</div></button>
+  `;
+  modal.style.display = 'flex';
+}
+
+function updateSurvivalHUD() {
+  const hpPct = Math.max(0, Math.min(100, Math.min(surv.hero.hp, surv.router.hp)));
+  document.getElementById('hp-fill').style.width = hpPct + '%';
+  document.getElementById('net-fill').style.width = Math.min(100, surv.internetProgress) + '%';
+  document.getElementById('hud-score').textContent = `⚡ ${surv.score}`;
+}
+
+function updateSurvival() {
+  if (surv.paused) return;
+
+  const h = surv.hero;
+  surv.router.x = W / 2;
+  surv.router.y = H / 2;
+
+  let mvX = surv.joy.dx, mvY = surv.joy.dy;
+  if (keys['ArrowLeft'] || keys['KeyA']) mvX -= 1;
+  if (keys['ArrowRight'] || keys['KeyD']) mvX += 1;
+  if (keys['ArrowUp'] || keys['KeyW']) mvY -= 1;
+  if (keys['ArrowDown'] || keys['KeyS']) mvY += 1;
+
+  const mag = Math.hypot(mvX, mvY);
+  if (mag > 0.05) {
+    const nx = mvX / Math.max(1, mag);
+    const ny = mvY / Math.max(1, mag);
+    h.x = Math.max(h.r, Math.min(W - h.r, h.x + nx * h.speed));
+    h.y = Math.max(h.r + 45, Math.min(H - h.r, h.y + ny * h.speed));
+    h.walkFrame++;
+    h.angle = Math.atan2(ny, nx);
+  }
+
+  h.isPatching = false;
+  for (let i = surv.servers.length - 1; i >= 0; i--) {
+    const srv = surv.servers[i];
+    const dist = Math.hypot(h.x - srv.x, h.y - srv.y);
+
+    if (Math.random() < 0.18) {
+      addParticles(srv.x + (Math.random() - 0.5) * 26, srv.y - 18, '#475569', 1);
+    }
+
+    if (dist < h.r + 42) {
+      h.isPatching = true;
+      const prevProg = srv.progress;
+      srv.progress += 0.42 * h.repairSpeed;
+      srv.shake = Math.sin(Date.now() * 0.06) * 3;
+
+      if (Math.random() < 0.16) {
+        addFlyingEnginePart(srv.x, srv.y - 10);
+        addParticles(srv.x, srv.y, '#fde047', 2);
+      }
+
+      for (const st of srv.tapeStrips) {
+        if (prevProg < st.threshold && srv.progress >= st.threshold) {
+          playSound('tape');
+          addFloatingText(srv.x, srv.y - 28, '📼 ZZZT ! TAPE GRIS POSÉ !', '#cbd5e1');
+        }
+      }
+
+      if (srv.progress >= 100) {
+        playSound('powerup');
+        surv.internetProgress = Math.min(100, surv.internetProgress + 25);
+        surv.score += 200;
+        addFloatingText(srv.x, srv.y - 20, '✅ SERVEUR PATCHÉ AU TAPE (+25%)', '#4ade80');
+        surv.servers.splice(i, 1);
+
+        if (surv.internetProgress >= 100) {
+          updateSurvivalHUD();
+          endSurvivalGame(true);
+          return;
+        } else {
+          surv.wave++;
+          showToast(`🔥 VAGUE ${surv.wave} : UN AUTRE SERVEUR VIENT D'EXPLOSER !`);
+          spawnBrokenServer();
+        }
+      }
+    } else {
+      srv.shake = 0;
+    }
+  }
+
+  let nearest = null, minDist = 9999;
+  for (const e of surv.enemies) {
+    const d = Math.hypot(e.x - h.x, e.y - h.y);
+    if (d < minDist) { minDist = d; nearest = e; }
+  }
+  if (nearest && minDist < 360) {
+    h.angle = Math.atan2(nearest.y - h.y, nearest.x - h.x);
+    if (h.fireCd <= 0) {
+      h.fireCd = h.fireRate;
+      playSound('shoot');
+      for (let m = 0; m < h.multiShot; m++) {
+        const spread = (m - (h.multiShot - 1) / 2) * 0.16;
+        const a = h.angle + spread;
+        surv.bullets.push({ x: h.x, y: h.y, vx: Math.cos(a) * 8.5, vy: Math.sin(a) * 8.5, dmg: h.bulletDmg, pierce: 1, isBolt: false, life: 60 });
+      }
+    }
+  }
+  if (h.fireCd > 0) h.fireCd--;
+
+  for (const hl of h.helpers) {
+    if (hl.cd > 0) hl.cd--;
+    let target = null, bestD = 9999;
+    for (const e of surv.enemies) {
+      const d = Math.hypot(e.x - hl.x, e.y - hl.y);
+      if (d < bestD) { bestD = d; target = e; }
+    }
+    if (target && bestD < 420) {
+      hl.angle = Math.atan2(target.y - hl.y, target.x - hl.x);
+      if (hl.cd <= 0) {
+        if (hl.type === 'ballista') {
+          hl.cd = 52;
+          playSound('ballista');
+          surv.bullets.push({
+            x: hl.x, y: hl.y,
+            vx: Math.cos(hl.angle) * 11,
+            vy: Math.sin(hl.angle) * 11,
+            angle: hl.angle,
+            dmg: 45,
+            pierce: 4,
+            isBolt: true,
+            life: 75
+          });
+        } else if (hl.type === 'turret') {
+          hl.cd = 18;
+          playSound('shoot');
+          surv.bullets.push({
+            x: hl.x, y: hl.y,
+            vx: Math.cos(hl.angle) * 9,
+            vy: Math.sin(hl.angle) * 9,
+            dmg: 14,
+            pierce: 1,
+            isBolt: false,
+            life: 55
+          });
+        } else if (hl.type === 'tesla') {
+          hl.cd = 40;
+          playSound('shoot');
+          let count = 0;
+          for (const e of surv.enemies) {
+            if (Math.hypot(e.x - hl.x, e.y - hl.y) < 190 && count < 3) {
+              e.hp -= 28;
+              addParticles(e.x, e.y, '#38bdf8', 6);
+              hl.lastZapX = e.x; hl.lastZapY = e.y; hl.zapTimer = 8;
+              count++;
+            }
+          }
+        }
+      }
+    }
+    if (hl.zapTimer > 0) hl.zapTimer--;
+  }
+
+  for (let i = surv.bullets.length - 1; i >= 0; i--) {
+    const b = surv.bullets[i];
+    b.x += b.vx; b.y += b.vy; b.life--;
+    if (b.life <= 0) { surv.bullets.splice(i, 1); continue; }
+    for (let j = surv.enemies.length - 1; j >= 0; j--) {
+      const e = surv.enemies[j];
+      if (Math.hypot(b.x - e.x, b.y - e.y) < e.r + (b.isBolt ? 9 : 5)) {
+        e.hp -= b.dmg;
+        b.pierce--;
+        addParticles(e.x, e.y, b.isBolt ? '#f97316' : '#fde047', 5);
+        if (e.hp <= 0) {
+          playSound('hit');
+          surv.score += 25;
+          surv.gems.push({ x: e.x, y: e.y, r: 6 });
+          addFlyingEnginePart(e.x, e.y, ['🍷', '🍾']);
+          surv.enemies.splice(j, 1);
+        }
+        if (b.pierce <= 0) {
+          surv.bullets.splice(i, 1);
+          break;
+        }
+      }
+    }
+  }
+
+  surv.spawnTimer++;
+  const spawnInterval = Math.max(25, 76 - surv.wave * 9);
+  if (surv.spawnTimer >= spawnInterval) {
+    surv.spawnTimer = 0;
+    spawnSurvivalEnemy();
+  }
+
+  for (let i = surv.enemies.length - 1; i >= 0; i--) {
+    const e = surv.enemies[i];
+    const dHero = Math.hypot(h.x - e.x, h.y - e.y);
+    const dRouter = Math.hypot(surv.router.x - e.x, surv.router.y - e.y);
+    const tx = dHero < dRouter ? h.x : surv.router.x;
+    const ty = dHero < dRouter ? h.y : surv.router.y;
+    const a = Math.atan2(ty - e.y, tx - e.x);
+    e.x += Math.cos(a) * e.speed;
+    e.y += Math.sin(a) * e.speed;
+
+    if (e.type === 'php') {
+      e.shootCd--;
+      if (e.shootCd <= 0 && dHero < 260) {
+        e.shootCd = 120;
+        surv.enemyBullets.push({ x: e.x, y: e.y, vx: Math.cos(a) * 3.8, vy: Math.sin(a) * 3.8, life: 90 });
+      }
+    }
+
+    if (dHero < h.r + e.r) h.hp -= 0.32;
+    if (dRouter < surv.router.r + e.r) surv.router.hp -= 0.22;
+  }
+
+  for (let i = surv.enemyBullets.length - 1; i >= 0; i--) {
+    const eb = surv.enemyBullets[i];
+    eb.x += eb.vx; eb.y += eb.vy; eb.life--;
+    if (eb.life <= 0) { surv.enemyBullets.splice(i, 1); continue; }
+    if (Math.hypot(eb.x - h.x, eb.y - h.y) < h.r + 5) {
+      h.hp -= 8;
+      addFloatingText(h.x, h.y, 'Fatal Error!', '#ef4444');
+      surv.enemyBullets.splice(i, 1);
+    }
+  }
+
+  for (let i = surv.gems.length - 1; i >= 0; i--) {
+    const g = surv.gems[i];
+    const d = Math.hypot(h.x - g.x, h.y - g.y);
+    if (d < 90) {
+      g.x += (h.x - g.x) * 0.18;
+      g.y += (h.y - g.y) * 0.18;
+    }
+    if (d < h.r + g.r) {
+      surv.gems.splice(i, 1);
+      surv.xp++;
+      if (surv.xp >= surv.xpNext) {
+        surv.xp = 0;
+        surv.level++;
+        surv.xpNext = Math.floor(surv.xpNext * 1.4 + 3);
+        triggerSurvivalLevelUp();
+      }
+    }
+  }
+
+  updateSurvivalHUD();
+  if (h.hp <= 0 || surv.router.hp <= 0) {
+    endSurvivalGame(false);
+  }
+}
+
+function drawBrokenServerRack(ctx, srv) {
+  ctx.save();
+  ctx.translate(srv.x + srv.shake, srv.y);
+
+  ctx.strokeStyle = srv.progress > 0 ? '#4ade80' : '#f97316';
+  ctx.lineWidth = 2.5;
+  ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  ctx.arc(0, 0, 44, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = '#1e293b';
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-srv.w / 2, -srv.h / 2, srv.w, srv.h, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-srv.w / 2 + 5, -srv.h / 2 + 8, srv.w - 10, srv.h - 16);
+
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-12, -12); ctx.lineTo(10, 4); ctx.lineTo(-8, 14);
+  ctx.stroke();
+  ctx.fillStyle = (Date.now() % 400 < 200) ? '#ef4444' : '#fde047';
+  ctx.beginPath();
+  ctx.arc(-12, -16, 3, 0, Math.PI * 2);
+  ctx.arc(12, -16, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  for (const st of srv.tapeStrips) {
+    if (srv.progress >= st.threshold) {
+      ctx.save();
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 9;
+      ctx.lineCap = 'butt';
+      ctx.beginPath();
+      ctx.moveTo(st.x1, st.y1);
+      ctx.lineTo(st.x2, st.y2);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(st.x1, st.y1 - 1.5);
+      ctx.lineTo(st.x2, st.y2 - 1.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-26, -srv.h / 2 - 18, 52, 9);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillRect(-25, -srv.h / 2 - 17, (50 * srv.progress) / 100, 7);
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`📼 TAPE GRIS ${Math.floor(srv.progress)}%`, 0, -srv.h / 2 - 22);
+
+  ctx.restore();
+}
+
+function drawHelperWeapon(ctx, hl) {
+  ctx.save();
+  ctx.translate(hl.x, hl.y);
+
+  ctx.fillStyle = '#334155';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.rotate(hl.angle);
+
+  if (hl.type === 'ballista') {
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(6, -16);
+    ctx.lineTo(-4, 0);
+    ctx.lineTo(6, 16);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, -Math.PI * 0.45, Math.PI * 0.45);
+    ctx.stroke();
+
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-10, -3, 24, 6);
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.moveTo(18, 0); ctx.lineTo(10, -5); ctx.lineTo(10, 5); ctx.closePath();
+    ctx.fill();
+  } else if (hl.type === 'turret') {
+    ctx.fillStyle = '#f97316';
+    ctx.fillRect(0, -6, 18, 4);
+    ctx.fillRect(0, 2, 18, 4);
+    ctx.fillStyle = '#ea580c';
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (hl.type === 'tesla') {
+    ctx.fillStyle = '#0284c7';
+    ctx.beginPath();
+    ctx.arc(0, 0, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+
+  if (hl.type === 'tesla' && hl.zapTimer > 0) {
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(hl.x, hl.y);
+    ctx.lineTo((hl.x + hl.lastZapX) / 2 + (Math.random() - 0.5) * 18, (hl.y + hl.lastZapY) / 2 + (Math.random() - 0.5) * 18);
+    ctx.lineTo(hl.lastZapX, hl.lastZapY);
+    ctx.stroke();
+  }
+}
+
+function drawSurvival() {
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+  ctx.lineWidth = 1;
+  const grid = 44;
+  for (let x = 0; x < W; x += grid) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+  for (let y = 0; y < H; y += grid) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+
+  const rt = surv.router;
+  ctx.save();
+  ctx.translate(rt.x, rt.y);
+  ctx.fillStyle = 'rgba(239, 68, 68, 0.14)';
+  ctx.beginPath(); ctx.arc(0, 0, rt.r + 16 + Math.sin(Date.now() * 0.006) * 5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#dc2626';
+  ctx.strokeStyle = '#fca5a5';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(0, 0, rt.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = '900 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('REDTOWER', 0, -2);
+  ctx.font = '700 9px sans-serif';
+  ctx.fillText(`HP ${Math.ceil(rt.hp)}%`, 0, 11);
+  ctx.restore();
+
+  for (const srv of surv.servers) {
+    drawBrokenServerRack(ctx, srv);
+    const ang = Math.atan2(srv.y - surv.hero.y, srv.x - surv.hero.x);
+    const ax = surv.hero.x + Math.cos(ang) * 44;
+    const ay = surv.hero.y + Math.sin(ang) * 44;
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(ax, ay, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (const hl of surv.hero.helpers) {
+    drawHelperWeapon(ctx, hl);
+  }
+
+  for (const g of surv.gems) {
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath(); ctx.arc(g.x, g.y, g.r, 0, Math.PI * 2); ctx.fill();
+  }
+
+  for (const b of surv.bullets) {
+    if (b.isBolt) {
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.angle);
+      ctx.fillStyle = '#fde047';
+      ctx.fillRect(-12, -2.5, 24, 5);
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.moveTo(14, 0); ctx.lineTo(6, -6); ctx.lineTo(6, 6); ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath(); ctx.arc(b.x, b.y, 4.5, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  for (const eb of surv.enemyBullets) {
+    ctx.fillStyle = '#f43f5e';
+    ctx.font = '900 11px monospace';
+    ctx.fillText('<??>', eb.x - 12, eb.y);
+  }
+
+  for (const e of surv.enemies) {
+    drawEnemyCMS(ctx, e.x, e.y, e.r, e.type, false, 0);
+  }
+
+  drawLatinoHero(ctx, surv.hero.x, surv.hero.y, surv.hero.r, surv.hero.angle, surv.hero.walkFrame, surv.hero.isPatching);
+
+  if (surv.joy.active) {
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.5)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(surv.joy.startX, surv.joy.startY, 42, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(250, 204, 21, 0.75)';
+    ctx.beginPath(); ctx.arc(surv.joy.curX, surv.joy.curY, 18, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// =========================================================
+// MODE 2: ANGRY BESHOÏ (Scrolling Camera & Wide World!)
+// =========================================================
+const { Engine, World, Bodies, Body, Events } = Matter;
+let angry = {};
+
+function initAngry(levelIdx = 0) {
+  currentMode = 'angry';
+  particles = []; floatingTexts = []; flyingParts = [];
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'none';
+  document.getElementById('hud-net-bar').style.display = 'block';
+  document.getElementById('btn-cam').style.display = 'inline-block';
+  document.getElementById('btn-cam').textContent = '🔭 VOIR TOUR';
+  document.getElementById('hud-net-icon').textContent = '🍷';
+
+  const levelNames = ['Vignoble (Niv 1/3)', 'Entrepôt de Vin (Niv 2/3)', 'Chai Royal (Niv 3/3)'];
+  document.getElementById('hud-net-label').textContent = levelNames[levelIdx] || `Niveau ${levelIdx + 1}/3`;
+  document.getElementById('net-fill').style.width = ((levelIdx + 1) / 3 * 100) + '%';
+
+  const groundY = H - 68;
+  const slingX = 165;
+  const slingY = groundY - 82;
+  const towerX = Math.max(W + 340, 880);
+  const worldW = towerX + 450;
+
+  const engine = Engine.create();
+  engine.gravity.y = 0.92;
+
+  angry = {
+    engine,
+    world: engine.world,
+    level: levelIdx,
+    groundY,
+    worldW,
+    slingX, slingY,
+    towerX,
+    camX: Math.max(0, towerX - W * 0.55),
+    introTimer: 95,
+    peekingTower: false,
+    score: angry.score || 0,
+    beshoisLeft: 4,
+    dragging: false,
+    dragX: slingX, dragY: slingY,
+    activeBeshoi: null,
+    clones: [],
+    blocks: [],
+    pigs: [],
+    clouds: [
+      { x: 180, y: H * 0.16, s: 1.1 },
+      { x: 580, y: H * 0.11, s: 1.4 },
+      { x: 980, y: H * 0.22, s: 0.9 },
+      { x: 1320, y: H * 0.15, s: 1.2 }
+    ],
+    settleTimer: 0
+  };
+
+  const ground = Bodies.rectangle(worldW / 2, groundY + 40, worldW * 2, 80, { isStatic: true, friction: 0.9 });
+  World.add(angry.world, [ground]);
+
+  buildAngryPhysicsLevel(levelIdx, groundY, towerX);
+
+  Events.on(engine, 'collisionStart', event => {
+    for (const pair of event.pairs) {
+      const relSpeed = Math.hypot(
+        pair.bodyA.velocity.x - pair.bodyB.velocity.x,
+        pair.bodyA.velocity.y - pair.bodyB.velocity.y
+      );
+
+      if (relSpeed > 2.4) {
+        damageBody(pair.bodyA, relSpeed);
+        damageBody(pair.bodyB, relSpeed);
+      }
+    }
+  });
+
+  const levelToasts = [
+    '🍇 Niveau 1 : Le Vignoble ! La caméra recule vers ta fronde...',
+    '📦 Niveau 2 : L\'Entrepôt de Caisses de Vin ! Écrase SilverStripe & WordPress !',
+    '🍷 Niveau 3 : Le Grand Chai ! Déloge WooCommerce au loin !'
+  ];
+  showToast(levelToasts[levelIdx]);
+  document.getElementById('hud-score').textContent = `⚡ ${angry.score}`;
+}
+
+function VectorSpeed(v) {
+  return Math.hypot(v.x, v.y);
+}
+
+function damageBody(body, impact) {
+  if (!body.gameData) return;
+  const gd = body.gameData;
+  gd.hp -= impact * (gd.kind === 'pig' ? 4.2 : 2.6);
+  if (impact > 4) {
+    playSound('hit');
+    addParticles(body.position.x, body.position.y, gd.kind === 'pig' ? '#991b1b' : '#d97706', 5);
+  }
+}
+
+function addBeam(x, y, w, h, label, mat = 'wood') {
+  const body = Bodies.rectangle(x, y, w, h, {
+    density: mat === 'stone' ? 0.004 : 0.0022,
+    friction: 0.85,
+    restitution: 0.12,
+    chamfer: { radius: 3 }
+  });
+  body.gameData = { kind: 'block', w, h, label, mat, hp: mat === 'stone' ? 55 : 36, maxHp: mat === 'stone' ? 55 : 36 };
+  angry.blocks.push(body);
+  World.add(angry.world, body);
+}
+
+function addPig(x, y, r, type) {
+  const body = Bodies.circle(x, y, r, {
+    density: 0.002,
+    friction: 0.6,
+    restitution: 0.35
+  });
+  body.gameData = { kind: 'pig', r, type, hp: type === 'woocommerce' ? 45 : 26 };
+  angry.pigs.push(body);
+  World.add(angry.world, body);
+}
+
+function buildAngryPhysicsLevel(lvl, gY, cx) {
+  if (lvl === 0) {
+    addBeam(cx - 50, gY - 40, 22, 80, 'Château WP', 'wood');
+    addBeam(cx + 50, gY - 40, 22, 80, 'Merlot 404', 'wood');
+    addPig(cx, gY - 20, 20, 'wordpress');
+    addBeam(cx, gY - 90, 140, 18, 'Caisse Grand Cru', 'stone');
+
+    addBeam(cx - 38, gY - 134, 20, 70, 'Pinot PHP', 'wood');
+    addBeam(cx + 38, gY - 134, 20, 70, 'SilverWine', 'wood');
+    addPig(cx, gY - 118, 20, 'silverstripe');
+    addBeam(cx, gY - 178, 110, 18, 'Millésime 1999', 'stone');
+  } else if (lvl === 1) {
+    addBeam(cx - 75, gY - 42, 22, 84, 'Bordeaux', 'wood');
+    addBeam(cx, gY - 42, 22, 84, 'Bourgogne', 'wood');
+    addBeam(cx + 75, gY - 42, 22, 84, 'Chianti', 'wood');
+
+    addPig(cx - 38, gY - 20, 19, 'wordpress');
+    addPig(cx + 38, gY - 20, 19, 'silverstripe');
+
+    addBeam(cx - 38, gY - 93, 92, 18, 'Palette Rouge', 'stone');
+    addBeam(cx + 38, gY - 93, 92, 18, 'Palette Blanc', 'stone');
+
+    addBeam(cx - 45, gY - 138, 20, 72, 'Caisse #12', 'wood');
+    addBeam(cx + 45, gY - 138, 20, 72, 'Caisse #42', 'wood');
+    addPig(cx, gY - 120, 21, 'php');
+
+    addBeam(cx, gY - 183, 125, 18, 'Fût de Chêne', 'stone');
+  } else {
+    addBeam(cx - 65, gY - 45, 22, 90, 'Cuvée WP', 'wood');
+    addBeam(cx, gY - 45, 22, 90, 'Cuvée SS', 'wood');
+    addBeam(cx + 65, gY - 45, 22, 90, 'Cuvée PHP', 'wood');
+
+    addPig(cx - 32, gY - 20, 18, 'wordpress');
+    addPig(cx + 32, gY - 20, 18, 'silverstripe');
+
+    addBeam(cx, gY - 99, 165, 18, 'Comptoir de Dégustation', 'stone');
+
+    addBeam(cx - 48, gY - 144, 20, 72, 'Syrah', 'wood');
+    addBeam(cx + 48, gY - 144, 20, 72, 'Cabernet', 'wood');
+    addPig(cx, gY - 128, 20, 'php');
+
+    addBeam(cx, gY - 189, 130, 18, 'Réserve WooCommerce', 'stone');
+
+    addBeam(cx - 32, gY - 226, 18, 56, 'Magnum', 'wood');
+    addBeam(cx + 32, gY - 226, 18, 56, 'Jéroboam', 'wood');
+    addPig(cx, gY - 218, 23, 'woocommerce');
+  }
+}
+
+function updateAngry() {
+  Engine.update(angry.engine, 1000 / 60);
+
+  if (angry.introTimer > 0) {
+    angry.introTimer--;
+  }
+  const maxCamX = Math.max(0, angry.towerX - W * 0.52);
+  let targetCamX = 0;
+
+  if (angry.activeBeshoi) {
+    targetCamX = Math.max(0, Math.min(maxCamX, angry.activeBeshoi.position.x - W * 0.35));
+  } else if (angry.introTimer > 35 || angry.peekingTower) {
+    targetCamX = maxCamX;
+  } else {
+    targetCamX = 0;
+  }
+  angry.camX += (targetCamX - angry.camX) * 0.09;
+
+  for (let i = angry.blocks.length - 1; i >= 0; i--) {
+    const b = angry.blocks[i];
+    if (b.gameData.hp <= 0 || b.position.y > H + 100) {
+      playSound('boom');
+      addParticles(b.position.x, b.position.y, '#d97706', 14);
+      angry.score += 50;
+      World.remove(angry.world, b);
+      angry.blocks.splice(i, 1);
+    }
+  }
+
+  for (let i = angry.pigs.length - 1; i >= 0; i--) {
+    const p = angry.pigs[i];
+    if (p.gameData.hp <= 0 || p.position.y > H + 100) {
+      playSound('boom');
+      addParticles(p.position.x, p.position.y, '#991b1b', 18);
+      addFlyingEnginePart(p.position.x, p.position.y, ['🍷', '🍾', '🍇']);
+      angry.score += 250;
+      addFloatingText(p.position.x, p.position.y - 15, `🍷 ${p.gameData.type.toUpperCase()} K.O.!`, '#fde047');
+      World.remove(angry.world, p);
+      angry.pigs.splice(i, 1);
+    }
+  }
+
+  document.getElementById('hud-score').textContent = `⚡ ${angry.score}`;
+
+  if (angry.activeBeshoi) {
+    angry.settleTimer++;
+    const sp = VectorSpeed(angry.activeBeshoi.velocity);
+    const out = angry.activeBeshoi.position.x > angry.worldW + 100 || angry.activeBeshoi.position.x < -120;
+    if ((sp < 0.25 && angry.settleTimer > 95) || angry.settleTimer > 250 || out) {
+      World.remove(angry.world, angry.activeBeshoi);
+      for (const c of angry.clones) World.remove(angry.world, c);
+      angry.activeBeshoi = null;
+      angry.clones = [];
+      angry.settleTimer = 0;
+
+      if (angry.pigs.length === 0) showAngryModal(true);
+      else if (angry.beshoisLeft <= 0) showAngryModal(false);
+    }
+  } else if (angry.pigs.length === 0) {
+    showAngryModal(true);
+  }
+}
+
+function showAngryModal(won) {
+  const modal = document.getElementById('modal-screen');
+  if (modal.style.display === 'flex') return;
+  playSound('powerup');
+  const nextLvl = angry.level + 1;
+  document.getElementById('modal-title').textContent = won
+    ? (nextLvl < 3 ? `🍷 NIVEAU ${angry.level + 1} NETTOYÉ !` : '🏆 VENDANGES TERMINÉES !')
+    : '😅 PLUS DE BESHOÏ EN STOCK !';
+  document.getElementById('modal-desc').textContent = won
+    ? `Les caisses de vin et les cochons CMS se sont écroulés ! Score: ${angry.score}`
+    : `Il reste des cochons CMS avec leurs bouteilles... Vise les caisses du bas !`;
+
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = '';
+  if (won && nextLvl < 3) {
+    list.innerHTML += `<button class="upg-btn" onclick="initAngry(${nextLvl})"><span class="upg-icon">🍇</span><div>Niveau Suivant (${nextLvl + 1}/3)</div></button>`;
+  } else {
+    list.innerHTML += `<button class="upg-btn" onclick="initAngry(0)"><span class="upg-icon">🔄</span><div>Rejouer depuis le Vignoble (Niv 1)</div></button>`;
+  }
+  list.innerHTML += `
+    <button class="upg-btn" onclick="initAngry(${angry.level})"><span class="upg-icon">🎯</span><div>Rejouer ce Niveau</div></button>
+    <button class="upg-btn" onclick="initDoom()"><span class="upg-icon">💉</span><div>Jouer à WHORE PRESS (DOOM)</div></button>
+    <button class="upg-btn" onclick="goMenu()"><span class="upg-icon">🏠</span><div>Menu Principal</div></button>
+  `;
+  modal.style.display = 'flex';
+}
+
+function drawVineyardScenery(ctx, gY, worldW, camX) {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const sky = ctx.createLinearGradient(0, 0, 0, gY);
+  sky.addColorStop(0, '#1e1b4b');
+  sky.addColorStop(0.4, '#4c1d95');
+  sky.addColorStop(0.75, '#9a3412');
+  sky.addColorStop(1, '#f59e0b');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, gY);
+
+  const sunX = W * 0.72 - camX * 0.12;
+  const sunGrad = ctx.createRadialGradient(sunX, gY - 65, 10, sunX, gY - 65, 130);
+  sunGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+  sunGrad.addColorStop(0.45, 'rgba(249, 115, 22, 0.35)');
+  sunGrad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+  ctx.fillStyle = sunGrad;
+  ctx.beginPath();
+  ctx.arc(sunX, gY - 65, 130, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(camX * 0.45, 0);
+  ctx.fillStyle = '#14532d';
+  ctx.beginPath();
+  ctx.moveTo(-200, gY);
+  for (let hx = -200; hx < worldW + 400; hx += 360) {
+    ctx.quadraticCurveTo(hx + 180, gY - 95, hx + 360, gY - 30);
+  }
+  ctx.lineTo(worldW + 400, gY);
+  ctx.closePath();
+  ctx.fill();
+
+  const chX = 420, chY = gY - 58;
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(chX - 28, chY - 22, 56, 26);
+  ctx.fillRect(chX - 38, chY - 36, 16, 40);
+  ctx.fillRect(chX + 22, chY - 36, 16, 40);
+  ctx.fillStyle = '#7f1d1d';
+  ctx.beginPath();
+  ctx.moveTo(chX - 40, chY - 36); ctx.lineTo(chX - 30, chY - 52); ctx.lineTo(chX - 20, chY - 36);
+  ctx.moveTo(chX + 20, chY - 36); ctx.lineTo(chX + 30, chY - 52); ctx.lineTo(chX + 40, chY - 36);
+  ctx.fill();
+  ctx.restore();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(-100, gY - 28); ctx.lineTo(worldW, gY - 28);
+  ctx.moveTo(-100, gY - 15); ctx.lineTo(worldW, gY - 15);
+  ctx.stroke();
+
+  for (let vx = 40; vx < worldW; vx += 74) {
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(vx - 2.5, gY - 38, 5, 38);
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath();
+    ctx.arc(vx - 14, gY - 26, 11, 0, Math.PI * 2);
+    ctx.arc(vx, gY - 29, 13, 0, Math.PI * 2);
+    ctx.arc(vx + 14, gY - 26, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#581c87';
+    ctx.beginPath();
+    ctx.arc(vx - 8, gY - 16, 4.5, 0, Math.PI * 2);
+    ctx.arc(vx + 9, gY - 15, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.fillStyle = '#166534';
+  ctx.fillRect(-200, gY, worldW + 400, 12);
+  ctx.fillStyle = '#3f2e21';
+  ctx.fillRect(-200, gY + 12, worldW + 400, H - gY + 50);
+}
+
+function drawWineWarehouseScenery(ctx, gY, worldW) {
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  const wallGrad = ctx.createLinearGradient(0, 0, 0, gY);
+  wallGrad.addColorStop(0, '#090d16');
+  wallGrad.addColorStop(0.5, '#1c1917');
+  wallGrad.addColorStop(1, '#292524');
+  ctx.fillStyle = wallGrad;
+  ctx.fillRect(0, 0, W, gY);
+  ctx.restore();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(-200, 0, worldW + 400, 28);
+  for (let lx = 180; lx < worldW; lx += 280) {
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(lx, 0); ctx.lineTo(lx, 55); ctx.stroke();
+    ctx.fillStyle = '#475569';
+    ctx.beginPath();
+    ctx.moveTo(lx - 22, 55); ctx.lineTo(lx + 22, 55); ctx.lineTo(lx + 10, 42); ctx.lineTo(lx - 10, 42);
+    ctx.closePath();
+    ctx.fill();
+
+    const cone = ctx.createRadialGradient(lx, 60, 5, lx, 160, 180);
+    cone.addColorStop(0, 'rgba(253, 224, 71, 0.22)');
+    cone.addColorStop(1, 'rgba(253, 224, 71, 0)');
+    ctx.fillStyle = cone;
+    ctx.beginPath();
+    ctx.arc(lx, 120, 180, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  for (let bx = 80; bx < worldW - 80; bx += 190) {
+    ctx.fillStyle = 'rgba(120, 53, 15, 0.45)';
+    ctx.strokeStyle = 'rgba(180, 83, 9, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.fillRect(bx, gY - 70, 68, 70);
+    ctx.strokeRect(bx, gY - 70, 68, 70);
+    ctx.fillRect(bx + 8, gY - 125, 52, 55);
+    ctx.strokeRect(bx + 8, gY - 125, 52, 55);
+
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.25)';
+    ctx.font = '800 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('VIN IMPORT', bx + 34, gY - 35);
+    ctx.fillText('CAISSE #88', bx + 34, gY - 95);
+
+    ctx.fillStyle = 'rgba(101, 43, 13, 0.55)';
+    ctx.beginPath();
+    ctx.ellipse(bx + 106, gY - 28, 26, 28, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = '#44403c';
+  ctx.fillRect(-200, gY, worldW + 400, 12);
+  ctx.fillStyle = '#1c1917';
+  ctx.fillRect(-200, gY + 12, worldW + 400, H - gY + 50);
+}
+
+function drawAngry() {
+  const gY = angry.groundY;
+
+  ctx.save();
+  ctx.translate(-angry.camX, 0);
+
+  if (angry.level === 0) {
+    drawVineyardScenery(ctx, gY, angry.worldW, angry.camX);
+  } else {
+    drawWineWarehouseScenery(ctx, gY, angry.worldW);
+  }
+
+  drawLatinoHero(ctx, 42, gY - 24, 17, -0.2, Date.now() * 0.02, false);
+  for (let i = 0; i < angry.beshoisLeft - (angry.activeBeshoi ? 0 : 1); i++) {
+    drawBeshoi(ctx, 78 + i * 32, gY - 16, 13, 0, false);
+  }
+
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(angry.slingX, gY);
+  ctx.lineTo(angry.slingX, angry.slingY + 16);
+  ctx.lineTo(angry.slingX - 15, angry.slingY - 10);
+  ctx.moveTo(angry.slingX, angry.slingY + 16);
+  ctx.lineTo(angry.slingX + 15, angry.slingY - 10);
+  ctx.stroke();
+
+  if (angry.dragging) {
+    const vx = (angry.slingX - angry.dragX) * 0.28;
+    const vy = (angry.slingY - angry.dragY) * 0.28;
+    ctx.fillStyle = 'rgba(254, 240, 138, 0.85)';
+    for (let t = 2; t < 42; t += 2.8) {
+      const px = angry.slingX + vx * t;
+      const py = angry.slingY + vy * t + 0.5 * 0.50 * t * t;
+      if (py > gY) break;
+      ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(angry.slingX - 13, angry.slingY - 8);
+    ctx.lineTo(angry.dragX, angry.dragY);
+    ctx.lineTo(angry.slingX + 13, angry.slingY - 8);
+    ctx.stroke();
+  }
+
+  for (const b of angry.blocks) {
+    const gd = b.gameData;
+    ctx.save();
+    ctx.translate(b.position.x, b.position.y);
+    ctx.rotate(b.angle);
+
+    if (gd.mat === 'wood') {
+      ctx.fillStyle = '#92400e';
+      ctx.strokeStyle = '#fbbf24';
+    } else {
+      ctx.fillStyle = '#44403c';
+      ctx.strokeStyle = '#d6d3d1';
+    }
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-gd.w / 2, -gd.h / 2, gd.w, gd.h, 4);
+    ctx.fill();
+    ctx.stroke();
+
+    if (gd.hp < gd.maxHp * 0.65) {
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(-gd.w * 0.2, -gd.h * 0.2);
+      ctx.lineTo(0, 0);
+      ctx.lineTo(gd.w * 0.25, -gd.h * 0.1);
+      ctx.stroke();
+    }
+
+    if (gd.h > gd.w) ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = '#fef3c7';
+    ctx.font = '800 9.5px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(gd.label, 0, 0);
+
+    ctx.restore();
+  }
+
+  for (const p of angry.pigs) {
+    drawEnemyCMS(ctx, p.position.x, p.position.y, p.gameData.r, p.gameData.type, true, p.angle);
+  }
+
+  if (!angry.activeBeshoi && angry.beshoisLeft > 0) {
+    const bx = angry.dragging ? angry.dragX : angry.slingX;
+    const by = angry.dragging ? angry.dragY : angry.slingY;
+    drawBeshoi(ctx, bx, by, 19, 0, false);
+  }
+  if (angry.activeBeshoi) {
+    drawBeshoi(
+      ctx,
+      angry.activeBeshoi.position.x,
+      angry.activeBeshoi.position.y,
+      19,
+      angry.activeBeshoi.angle,
+      angry.activeBeshoi.boosted
+    );
+  }
+  for (const c of angry.clones) {
+    drawBeshoi(ctx, c.position.x, c.position.y, 15, c.angle, true);
+  }
+
+  ctx.restore();
+}
+
+// =========================================================
+// MODE 3: FLAPPY ROC (Pedantic Designer Bird vs Timber Buildings & Atomic Bunkers!)
+// =========================================================
+let flappy = {};
+let flappyBest = 0;
+
+function initFlappy() {
+  currentMode = 'flappy';
+  particles = []; floatingTexts = []; flyingParts = [];
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'none';
+  document.getElementById('hud-net-bar').style.display = 'none';
+  document.getElementById('btn-cam').style.display = 'none';
+  document.getElementById('hud-net-icon').textContent = '👓';
+  document.getElementById('hud-net-label').textContent = `FLAPPY ROC (Record: ${flappyBest})`;
+
+  const groundY = H - 58;
+  flappy = {
+    started: false,
+    dead: false,
+    score: 0,
+    groundY,
+    scrollX: 0,
+    bird: {
+      x: Math.min(130, W * 0.28),
+      y: groundY * 0.46,
+      r: 21,
+      vy: 0,
+      pitch: 0,
+      wingPhase: 0
+    },
+    obstacles: [],
+    spawnTimer: 0,
+    bgStructures: [
+      { x: W * 0.1, w: 95, h: 130, kind: 'timber' },
+      { x: W * 0.45, w: 120, h: 90, kind: 'bunker' },
+      { x: W * 0.8, w: 105, h: 155, kind: 'timber' }
+    ]
+  };
+
+  document.getElementById('hud-score').textContent = `⚡ 0`;
+  showToast('👓 Touche l\'écran pour faire voler Flappy Roc !');
+}
+
+function flapRoc() {
+  if (flappy.dead) return;
+  if (!flappy.started) flappy.started = true;
+  flappy.bird.vy = -7.4;
+  flappy.bird.wingPhase += 1.8;
+  playSound('flap');
+
+  const pedanticQuotes = [
+    '"C\'est du bois lamellé-collé !"',
+    '"Manque de rigueur conceptuelle..."',
+    '"Ce bunker manque de lumière zénithale."',
+    '"Le kerning de cette poutre est affreux."',
+    '"Très brutalisme post-soviétique."',
+    '"J\'aurais mis du cèdre rouge ici."'
+  ];
+  if (Math.random() < 0.35) {
+    addFloatingText(flappy.bird.x + 10, flappy.bird.y - 28, pedanticQuotes[Math.floor(Math.random() * pedanticQuotes.length)], '#fde047');
+  }
+}
+
+function spawnFlappyObstacle() {
+  const gY = flappy.groundY;
+  const gapH = Math.max(145, Math.min(182, gY * 0.31));
+  const minTop = 65;
+  const maxTop = gY - gapH - 75;
+  const gapTop = minTop + Math.random() * Math.max(40, maxTop - minTop);
+
+  const style = Math.random() < 0.5 ? 'wood' : 'bunker';
+  flappy.obstacles.push({
+    x: W + 60,
+    w: 76,
+    gapTop,
+    gapBottom: gapTop + gapH,
+    style,
+    passed: false
+  });
+}
+
+function updateFlappy() {
+  if (flappy.dead) return;
+
+  const b = flappy.bird;
+  if (!flappy.started) {
+    b.y = flappy.groundY * 0.46 + Math.sin(Date.now() * 0.006) * 8;
+    b.wingPhase += 0.15;
+    return;
+  }
+
+  flappy.scrollX += 3.2;
+  b.vy += 0.38;
+  b.y += b.vy;
+  b.pitch = Math.max(-0.45, Math.min(1.1, b.vy * 0.075));
+  b.wingPhase += 0.25;
+
+  for (const bg of flappy.bgStructures) {
+    bg.x -= 1.1;
+    if (bg.x + bg.w < -40) {
+      bg.x = W + 60;
+      bg.kind = Math.random() < 0.5 ? 'timber' : 'bunker';
+      bg.h = bg.kind === 'timber' ? 110 + Math.random() * 70 : 75 + Math.random() * 45;
+    }
+  }
+
+  flappy.spawnTimer++;
+  if (flappy.spawnTimer >= 88) {
+    flappy.spawnTimer = 0;
+    spawnFlappyObstacle();
+  }
+
+  for (let i = flappy.obstacles.length - 1; i >= 0; i--) {
+    const ob = flappy.obstacles[i];
+    ob.x -= 3.2;
+
+    if (!ob.passed && ob.x + ob.w < b.x) {
+      ob.passed = true;
+      flappy.score++;
+      if (flappy.score > flappyBest) flappyBest = flappy.score;
+      playSound('powerup');
+      document.getElementById('hud-score').textContent = `⚡ ${flappy.score}`;
+      document.getElementById('hud-net-label').textContent = `FLAPPY ROC (Record: ${flappyBest})`;
+    }
+
+    const hitX = b.x + b.r * 0.72 > ob.x && b.x - b.r * 0.72 < ob.x + ob.w;
+    const hitY = (b.y - b.r * 0.72 < ob.gapTop) || (b.y + b.r * 0.72 > ob.gapBottom);
+    if (hitX && hitY) {
+      triggerFlappyGameOver();
+      return;
+    }
+
+    if (ob.x + ob.w < -100) {
+      flappy.obstacles.splice(i, 1);
+    }
+  }
+
+  if (b.y + b.r >= flappy.groundY || b.y - b.r <= 0) {
+    triggerFlappyGameOver();
+  }
+}
+
+function triggerFlappyGameOver() {
+  flappy.dead = true;
+  playSound('boom');
+  addParticles(flappy.bird.x, flappy.bird.y, '#fde047', 20);
+  addFlyingEnginePart(flappy.bird.x, flappy.bird.y, ['👓', '📐', '✏️', '☢️', '🪵']);
+
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = '💥 FAUTE DE BON GOÛT !';
+  document.getElementById('modal-desc').textContent = `Flappy Roc s'est écrasé contre l'architecture ! Score: ${flappy.score} (Record: ${flappyBest})`;
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = `
+    <button class="upg-btn" onclick="initFlappy()"><span class="upg-icon">👓</span><div>Rejouer à Flappy Roc</div></button>
+    <button class="upg-btn" onclick="initDoom()"><span class="upg-icon">💉</span><div>Jouer à WHORE PRESS (DOOM)</div></button>
+    <button class="upg-btn" onclick="goMenu()"><span class="upg-icon">🏠</span><div>Menu Principal</div></button>
+  `;
+  modal.style.display = 'flex';
+}
+
+function drawFlappyStructure(ctx, x, y, w, h, style, isTop) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  if (style === 'wood') {
+    ctx.fillStyle = '#78350f';
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2.5;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeRect(0, 0, w, h);
+
+    ctx.fillStyle = '#451a03';
+    ctx.fillRect(7, 4, w - 14, h - 8);
+
+    ctx.strokeStyle = '#d97706';
+    ctx.lineWidth = 4;
+    const step = 48;
+    for (let py = 0; py < h; py += step) {
+      const segH = Math.min(step, h - py);
+      ctx.beginPath();
+      ctx.moveTo(6, py); ctx.lineTo(w - 6, py + segH);
+      ctx.moveTo(w - 6, py); ctx.lineTo(6, py + segH);
+      ctx.stroke();
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(2, py, w - 4, 6);
+    }
+
+    const capY = isTop ? h - 18 : 0;
+    ctx.fillStyle = '#b45309';
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2;
+    ctx.fillRect(-5, capY, w + 10, 18);
+    ctx.strokeRect(-5, capY, w + 10, 18);
+
+    ctx.fillStyle = '#fef3c7';
+    ctx.font = '800 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOIS CLT', w / 2, capY + 12);
+  } else {
+    const concGrad = ctx.createLinearGradient(0, 0, w, 0);
+    concGrad.addColorStop(0, '#334155');
+    concGrad.addColorStop(0.5, '#64748b');
+    concGrad.addColorStop(1, '#1e293b');
+    ctx.fillStyle = concGrad;
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2.5;
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeRect(0, 0, w, h);
+
+    ctx.fillStyle = '#0f172a';
+    for (let py = 24; py < h - 20; py += 44) {
+      ctx.fillRect(4, py, w - 8, 2);
+      ctx.beginPath();
+      ctx.arc(10, py - 6, 2.5, 0, Math.PI * 2);
+      ctx.arc(w - 10, py - 6, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    const capY = isTop ? h - 20 : 0;
+    ctx.fillStyle = '#eab308';
+    ctx.fillRect(-5, capY, w + 10, 20);
+    ctx.fillStyle = '#0f172a';
+    for (let sx = -4; sx < w + 6; sx += 14) {
+      ctx.beginPath();
+      ctx.moveTo(sx, capY);
+      ctx.lineTo(sx + 7, capY);
+      ctx.lineTo(sx + 2, capY + 20);
+      ctx.lineTo(sx - 5, capY + 20);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.strokeStyle = '#fde047';
+    ctx.strokeRect(-5, capY, w + 10, 20);
+
+    const midY = isTop ? Math.max(28, h - 52) : Math.min(h - 28, 52);
+    if (h > 65) {
+      ctx.fillStyle = '#eab308';
+      ctx.beginPath();
+      ctx.arc(w / 2, midY, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('☢️', w / 2, midY + 1);
+    }
+  }
+
+  ctx.restore();
+}
+
+function drawFlappy() {
+  const gY = flappy.groundY;
+
+  const sky = ctx.createLinearGradient(0, 0, 0, gY);
+  sky.addColorStop(0, '#1c1917');
+  sky.addColorStop(0.55, '#44403c');
+  sky.addColorStop(1, '#78716c');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, gY);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  for (let by = 0; by < gY * 0.5; by += 18) {
+    ctx.beginPath(); ctx.moveTo(0, by); ctx.lineTo(W, by); ctx.stroke();
+  }
+
+  for (const bg of flappy.bgStructures) {
+    if (bg.kind === 'timber') {
+      ctx.fillStyle = 'rgba(120, 53, 15, 0.45)';
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.fillRect(bg.x, gY - bg.h, bg.w, bg.h);
+      ctx.strokeRect(bg.x, gY - bg.h, bg.w, bg.h);
+      ctx.beginPath();
+      ctx.moveTo(bg.x, gY - bg.h); ctx.lineTo(bg.x + bg.w, gY);
+      ctx.moveTo(bg.x + bg.w, gY - bg.h); ctx.lineTo(bg.x, gY);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = 'rgba(51, 65, 85, 0.6)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(bg.x + bg.w / 2, gY, bg.w / 2, Math.PI, 0);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(234, 179, 8, 0.4)';
+      ctx.font = '800 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('☢️ BUNKER-09', bg.x + bg.w / 2, gY - 16);
+    }
+  }
+
+  for (const ob of flappy.obstacles) {
+    drawFlappyStructure(ctx, ob.x, 0, ob.w, ob.gapTop, ob.style, true);
+    drawFlappyStructure(ctx, ob.x, ob.gapBottom, ob.w, gY - ob.gapBottom, ob.style, false);
+  }
+
+  ctx.fillStyle = '#292524';
+  ctx.fillRect(0, gY, W, H - gY);
+  ctx.fillStyle = '#b45309';
+  ctx.fillRect(0, gY, W, 10);
+
+  drawPedanticDesignerBird(ctx, flappy.bird.x, flappy.bird.y, flappy.bird.r, flappy.bird.pitch, flappy.bird.wingPhase);
+
+  if (!flappy.started) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 135, gY * 0.65, 270, 54, 12);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('👆 TOUCHE POUR VOLER !', W / 2, gY * 0.65 + 24);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '700 11px sans-serif';
+    ctx.fillText('Évite les charpentes de bois & bunkers ☢️', W / 2, gY * 0.65 + 42);
+  }
+}
+
+// =========================================================
+// MODE 4: WHORE PRESS (Old-School DOOM 1993 3D Raycaster!)
+// Monsters: Putes PHP, Putes WordPress, DOS Attackers
+// Weapon: Extension Patch Launcher that CURES their venereal diseases!
+// =========================================================
+let doom = {};
+const DOOM_MAP_SIZE = 16;
+const DOOM_MAP = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
+  1,0,2,2,0,0,1,0,0,3,3,0,0,2,0,1,
+  1,0,2,0,0,0,0,0,0,0,3,0,0,2,0,1,
+  1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
+  1,0,0,0,3,0,1,1,0,1,1,0,0,0,0,1,
+  1,1,0,1,3,0,0,0,0,0,1,0,2,2,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,2,0,1,
+  1,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,2,2,0,1,0,0,0,0,1,0,0,3,0,1,
+  1,0,0,0,0,1,1,0,0,1,1,0,0,3,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,3,0,0,2,2,0,0,0,2,2,0,0,0,1,
+  1,0,3,3,0,0,0,0,0,0,0,2,0,0,0,1,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+];
+
+function initDoom() {
+  currentMode = 'doom';
+  particles = []; floatingTexts = []; flyingParts = [];
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'flex';
+  document.getElementById('hud-net-bar').style.display = 'block';
+  document.getElementById('btn-cam').style.display = 'none';
+  document.getElementById('hud-net-icon').textContent = '💉';
+  document.getElementById('hud-net-label').textContent = 'WHORE PRESS';
+
+  doom = {
+    paused: false,
+    score: 0,
+    curedCount: 0,
+    targetCure: 12,
+    wave: 1,
+    px: 3.5,
+    py: 3.5,
+    pa: 0.4, // Player angle
+    hp: 250,
+    maxHp: 250,
+    armor: 100,
+    recoil: 0,
+    muzzleFlash: 0,
+    walkBob: 0,
+    hurtFlash: 0,
+    cureFlash: 0,
+    enemies: [],
+    projectiles: [], // Flying extension patches in 3D space
+    moveJoy: { active: false, id: null, startX: 0, startY: 0, curX: 0, curY: 0, forward: 0, turn: 0 },
+    fireZone: { active: false }
+  };
+
+  for (let i = 0; i < 5; i++) {
+    spawnDoomMonster();
+  }
+
+  updateDoomHUD();
+  showToast('💉 WHORE PRESS : Tire des Patchs d\'Extension pour guérir leurs MST !');
+}
+
+function spawnDoomMonster() {
+  const types = [
+    {
+      id: 'php_whore',
+      name: 'PUTE PHP 5.2',
+      disease: 'Syphilis_eval()',
+      curedMsg: '✨ PUTE PHP GUÉRIE (+35 ❤️ Antibiotique) !',
+      hp: 60,
+      speed: 0.015,
+      color: '#ec4899'
+    },
+    {
+      id: 'wp_whore',
+      name: 'PUTE WORDPRESS',
+      disease: 'Herpès_xmlrpc',
+      curedMsg: '✨ PUTE WP PURIFIÉE (+35 ❤️ Patch v6.7) !',
+      hp: 50,
+      speed: 0.017,
+      color: '#a855f7'
+    },
+    {
+      id: 'dos_attacker',
+      name: 'DOS ATTACKER',
+      disease: 'Chlamydia_SYN_Flood',
+      curedMsg: '✨ DOS ATTACKER SOIGNÉ (+35 ❤️ Pare-feu) !',
+      hp: 75,
+      speed: 0.013,
+      color: '#ef4444'
+    }
+  ];
+
+  const t = types[Math.floor(Math.random() * types.length)];
+  let mx, my, tries = 0;
+  do {
+    mx = 1.5 + Math.random() * (DOOM_MAP_SIZE - 3);
+    my = 1.5 + Math.random() * (DOOM_MAP_SIZE - 3);
+    tries++;
+  } while (
+    (DOOM_MAP[Math.floor(my) * DOOM_MAP_SIZE + Math.floor(mx)] !== 0 ||
+     Math.hypot(mx - doom.px, my - doom.py) < 4.5) &&
+    tries < 50
+  );
+
+  doom.enemies.push({
+    x: mx,
+    y: my,
+    type: t.id,
+    name: t.name,
+    disease: t.disease,
+    curedMsg: t.curedMsg,
+    hp: t.hp,
+    maxHp: t.hp,
+    speed: t.speed,
+    color: t.color,
+    curedTimer: 0, // >0 when cured & purified before vanishing!
+    hitTimer: 0
+  });
+}
+
+function fireDoomPatchGun() {
+  if (doom.paused || doom.recoil > 4) return;
+  doom.recoil = 14;
+  doom.muzzleFlash = 5;
+  playSound('shotgun');
+
+  // Hitscan in a generous cone in front of player (classic DOOM vertical auto-aim!)
+  let hitEnemy = null;
+  let bestDist = 999;
+
+  for (const e of doom.enemies) {
+    if (e.curedTimer > 0) continue;
+    const dx = e.x - doom.px;
+    const dy = e.y - doom.py;
+    const dist = Math.hypot(dx, dy);
+    let angleDiff = Math.atan2(dy, dx) - doom.pa;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+
+    // Allow generous horizontal aim tolerance like original DOOM
+    if (Math.abs(angleDiff) < 0.28 && dist < bestDist && dist < 11.5) {
+      if (hasLineOfSight(doom.px, doom.py, e.x, e.y)) {
+        bestDist = dist;
+        hitEnemy = e;
+      }
+    }
+  }
+
+  if (hitEnemy) {
+    hitEnemy.hp -= 40;
+    hitEnemy.hitTimer = 6;
+
+    // Knockback: push monster away when hit by a patch!
+    const kdx = hitEnemy.x - doom.px;
+    const kdy = hitEnemy.y - doom.py;
+    const kd = Math.hypot(kdx, kdy) || 1;
+    const kx = hitEnemy.x + (kdx / kd) * 0.55;
+    const ky = hitEnemy.y + (kdy / kd) * 0.55;
+    if (DOOM_MAP[Math.floor(hitEnemy.y) * DOOM_MAP_SIZE + Math.floor(kx)] === 0) hitEnemy.x = kx;
+    if (DOOM_MAP[Math.floor(ky) * DOOM_MAP_SIZE + Math.floor(hitEnemy.x)] === 0) hitEnemy.y = ky;
+
+    if (hitEnemy.hp <= 0) {
+      hitEnemy.curedTimer = 35; // Shows angelic cured state!
+      doom.score += 200;
+      doom.curedCount++;
+      doom.hp = Math.min(doom.maxHp, doom.hp + 35); // Heal +35 HP on every cure!
+      doom.cureFlash = 6;
+      playSound('cure');
+      showToast(hitEnemy.curedMsg);
+      updateDoomHUD();
+
+      if (doom.curedCount >= doom.targetCure) {
+        setTimeout(() => endDoomGame(true), 600);
+      } else {
+        spawnDoomMonster();
+      }
+    } else {
+      playSound('hit');
+    }
+  }
+}
+
+function hasLineOfSight(x1, y1, x2, y2) {
+  const steps = 16;
+  for (let i = 1; i < steps; i++) {
+    const tx = x1 + ((x2 - x1) * i) / steps;
+    const ty = y1 + ((y2 - y1) * i) / steps;
+    if (DOOM_MAP[Math.floor(ty) * DOOM_MAP_SIZE + Math.floor(tx)] > 0) return false;
+  }
+  return true;
+}
+
+function updateDoomHUD() {
+  document.getElementById('hp-fill').style.width = Math.max(0, (doom.hp / doom.maxHp) * 100) + '%';
+  document.getElementById('net-fill').style.width = Math.min(100, (doom.curedCount / doom.targetCure) * 100) + '%';
+  document.getElementById('hud-score').textContent = `💉 ${doom.curedCount}/${doom.targetCure}`;
+}
+
+function endDoomGame(victory) {
+  doom.paused = true;
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = victory ? '🏆 RUES PURIFIÉES À 100% !' : '💀 INFECTÉ PAR UN PLUGIN VÉROLÉ !';
+  document.getElementById('modal-desc').textContent = victory
+    ? `Toutes les Putes PHP, WordPress et DOS Attackers ont été guéries de leurs maladies vénériennes grâce à tes Patchs d'Extensions ! Score: ${doom.score}`
+    : `Les MST de WordPress et les attaques DOS ont eu raison de ton pare-feu... Score: ${doom.score}`;
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = `
+    <button class="upg-btn" onclick="initDoom()"><span class="upg-icon">💉</span><div>Rejouer à WHORE PRESS</div></button>
+    <button class="upg-btn" onclick="initFlappy()"><span class="upg-icon">👓</span><div>Jouer à Flappy Roc</div></button>
+    <button class="upg-btn" onclick="initAngry(0)"><span class="upg-icon">🍷</span><div>Jouer à Angry Beshoï</div></button>
+    <button class="upg-btn" onclick="goMenu()"><span class="upg-icon">🏠</span><div>Menu Principal</div></button>
+  `;
+  modal.style.display = 'flex';
+}
+
+function updateDoom() {
+  if (doom.paused) return;
+
+  // Player Movement (Touch Joystick + Keyboard WASD/Arrows)
+  let moveStep = doom.moveJoy.forward * 0.058;
+  let turnStep = doom.moveJoy.turn * 0.048;
+
+  if (keys['KeyW'] || keys['ArrowUp']) moveStep += 0.058;
+  if (keys['KeyS'] || keys['ArrowDown']) moveStep -= 0.048;
+  if (keys['KeyA'] || keys['ArrowLeft']) turnStep -= 0.045;
+  if (keys['KeyD'] || keys['ArrowRight']) turnStep += 0.045;
+
+  doom.pa += turnStep;
+  if (Math.abs(moveStep) > 0.002) {
+    doom.walkBob += 0.22;
+    const nx = doom.px + Math.cos(doom.pa) * moveStep;
+    const ny = doom.py + Math.sin(doom.pa) * moveStep;
+    const pad = 0.28;
+    if (DOOM_MAP[Math.floor(doom.py) * DOOM_MAP_SIZE + Math.floor(nx + Math.sign( nx - doom.px ) * pad)] === 0) {
+      doom.px = nx;
+    }
+    if (DOOM_MAP[Math.floor(ny + Math.sign( ny - doom.py ) * pad) * DOOM_MAP_SIZE + Math.floor(doom.px)] === 0) {
+      doom.py = ny;
+    }
+  }
+
+  if (doom.recoil > 0) doom.recoil *= 0.78;
+  if (doom.recoil < 0.4) doom.recoil = 0;
+  if (doom.muzzleFlash > 0) doom.muzzleFlash--;
+  if (doom.hurtFlash > 0) doom.hurtFlash--;
+  if (doom.cureFlash > 0) doom.cureFlash--;
+
+  // Update Monsters in 3D Maze
+  for (let i = doom.enemies.length - 1; i >= 0; i--) {
+    const e = doom.enemies[i];
+    if (e.hitTimer > 0) e.hitTimer--;
+    if (e.curedTimer > 0) {
+      e.curedTimer--;
+      if (e.curedTimer === 0) doom.enemies.splice(i, 1);
+      continue;
+    }
+
+    const dx = doom.px - e.x;
+    const dy = doom.py - e.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 0.72) {
+      const mx = (dx / dist) * e.speed;
+      const my = (dy / dist) * e.speed;
+      if (DOOM_MAP[Math.floor(e.y) * DOOM_MAP_SIZE + Math.floor(e.x + mx * 4)] === 0) e.x += mx;
+      if (DOOM_MAP[Math.floor(e.y + my * 4) * DOOM_MAP_SIZE + Math.floor(e.x)] === 0) e.y += my;
+    } else {
+      // Monster infects player at close range (much gentler damage so player survives much longer!)
+      doom.hp -= 0.06;
+      if (Math.random() < 0.25) doom.hurtFlash = 3;
+      updateDoomHUD();
+      if (doom.hp <= 0) {
+        endDoomGame(false);
+        return;
+      }
+    }
+  }
+}
+
+// Draw 3D Billboarded Sprite for Pute PHP, Pute WordPress, or DOS Attacker!
+function drawDoomMonsterSprite(ctx, sx, sy, size, e) {
+  ctx.save();
+  ctx.translate(sx, sy);
+
+  const isCured = e.curedTimer > 0;
+  const scale = size / 100;
+  ctx.scale(scale, scale);
+
+  // Shadow on floor
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 46, 32, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (isCured) {
+    // CURED STATE: Angelic glowing green/white aura, medical patch & halo!
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.38)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 52, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden Halo above head
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(0, -48, 22, 6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Clean white medical gown / patched server suit
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.roundRect(-24, -15, 48, 55, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    // Smiling Cured Head
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.arc(0, -26, 18, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#15803d';
+    ctx.font = '900 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('SAIN v2.0', 0, 12);
+    ctx.fillText('🩹 GUÉRI !', 0, -56);
+    ctx.restore();
+    return;
+  }
+
+  // INFECTED MONSTER STATE (Red-Light District DOOM Demon style!)
+  if (e.hitTimer > 0) {
+    ctx.filter = 'brightness(2.2)';
+  }
+
+  // Fishnet legs & High Heels for PHP & WP Whores, or spiked boots for DOS Attacker
+  if (e.type === 'php_whore' || e.type === 'wp_whore') {
+    // High heel boots
+    ctx.fillStyle = '#be185d';
+    ctx.fillRect(-16, 20, 10, 26);
+    ctx.fillRect(6, 20, 10, 26);
+    // Fishnet stockings pattern
+    ctx.strokeStyle = '#171717';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-16, 25); ctx.lineTo(-6, 35);
+    ctx.moveTo(6, 25); ctx.lineTo(16, 35);
+    ctx.stroke();
+
+    // Corset / Mini-skirt in neon magenta/purple
+    ctx.fillStyle = e.type === 'php_whore' ? '#db2777' : '#7e22ce';
+    ctx.strokeStyle = '#fbcfe8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-24, 22);
+    ctx.lineTo(24, 22);
+    ctx.lineTo(18, -12);
+    ctx.lineTo(-18, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  } else {
+    // DOS ATTACKER: Hooded Cyber-Demon with DDoS tentacles
+    ctx.fillStyle = '#991b1b';
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(-28, -16, 56, 58, 12);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Greenish/Purple Venereal Virus Blisters & Biohazard Pustules on body!
+  const pulse = Math.sin(Date.now() * 0.012) * 2;
+  ctx.fillStyle = '#84cc16';
+  ctx.beginPath();
+  ctx.arc(-14, -4, 4.5 + pulse * 0.4, 0, Math.PI * 2);
+  ctx.arc(15, 6, 5 - pulse * 0.4, 0, Math.PI * 2);
+  ctx.arc(-8, 14, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Monster Head with Heavy Neon Makeup / Demon Eyes
+  ctx.fillStyle = e.type === 'dos_attacker' ? '#1e293b' : '#f472b6';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -25, 20, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Blonde/Neon Wig or Demon Horns
+  if (e.type === 'php_whore') {
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(0, -29, 21, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.fill();
+  } else if (e.type === 'wp_whore') {
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(0, -29, 21, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.fill();
+  } else {
+    // DOS Horns
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(-16, -38); ctx.lineTo(-26, -54); ctx.lineTo(-6, -42);
+    ctx.moveTo(16, -38); ctx.lineTo(26, -54); ctx.lineTo(6, -42);
+    ctx.fill();
+  }
+
+  // Glowing Eyes & Overdone Lipstick / Fang Mouth
+  ctx.fillStyle = '#fef08a';
+  ctx.beginPath();
+  ctx.arc(-7, -27, 4, 0, Math.PI * 2);
+  ctx.arc(7, -27, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath();
+  ctx.ellipse(0, -16, 8, 4.5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Chest Emblem (`<?php`, `WP`, `DDoS`)
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 10px monospace';
+  ctx.textAlign = 'center';
+  const badgeTxt = e.type === 'php_whore' ? '<?php' : (e.type === 'wp_whore' ? 'WP 69' : 'SYN-FLOOD');
+  ctx.fillText(badgeTxt, 0, 6);
+
+  // Floating Name & Venereal Disease Bar above head
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-34, -64, 68, 8);
+  ctx.fillStyle = '#ec4899';
+  ctx.fillRect(-33, -63, (66 * e.hp) / e.maxHp, 6);
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 9px monospace';
+  ctx.fillText(e.name, 0, -68);
+  ctx.fillStyle = '#a3e635';
+  ctx.font = '700 8px monospace';
+  ctx.fillText(`🦠 ${e.disease}`, 0, -50);
+
+  ctx.restore();
+}
+
+function drawDoom() {
+  const statusBarH = 74;
+  const viewH = H - statusBarH;
+  const halfH = viewH / 2;
+
+  // 1. Ceiling (Red-Light District Neon Dark Ceiling) & Floor
+  const ceilGrad = ctx.createLinearGradient(0, 0, 0, halfH);
+  ceilGrad.addColorStop(0, '#090514');
+  ceilGrad.addColorStop(1, '#2e1065');
+  ctx.fillStyle = ceilGrad;
+  ctx.fillRect(0, 0, W, halfH);
+
+  const floorGrad = ctx.createLinearGradient(0, halfH, 0, viewH);
+  floorGrad.addColorStop(0, '#1e1b4b');
+  floorGrad.addColorStop(1, '#3b0764');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, halfH, W, halfH);
+
+  // 2. Raycasting 3D Walls (120 vertical strips for crisp retro DOOM look)
+  const numRays = 120;
+  const stripW = Math.ceil(W / numRays);
+  const fov = Math.PI / 3;
+  const zBuffer = new Array(numRays).fill(999);
+
+  for (let r = 0; r < numRays; r++) {
+    const rayAngle = doom.pa - fov / 2 + (r / numRays) * fov;
+    const cosA = Math.cos(rayAngle);
+    const sinA = Math.sin(rayAngle);
+
+    let dist = 0;
+    let hitWall = 0;
+    let hitX = 0, hitY = 0;
+
+    while (dist < 16 && hitWall === 0) {
+      dist += 0.04;
+      hitX = doom.px + cosA * dist;
+      hitY = doom.py + sinA * dist;
+      const mx = Math.floor(hitX);
+      const my = Math.floor(hitY);
+      if (mx < 0 || mx >= DOOM_MAP_SIZE || my < 0 || my >= DOOM_MAP_SIZE) {
+        hitWall = 1;
+        break;
+      }
+      hitWall = DOOM_MAP[my * DOOM_MAP_SIZE + mx];
+    }
+
+    const perpDist = dist * Math.cos(rayAngle - doom.pa);
+    zBuffer[r] = perpDist;
+
+    const wallH = Math.min(viewH * 1.4, (viewH * 0.85) / Math.max(0.1, perpDist));
+    const wallTop = halfH - wallH / 2 + Math.sin(doom.walkBob) * 4;
+
+    // Shade wall by distance & wall type (1: Dungeon Brick, 2: Neon Pink Brothel Sign, 3: Infected Server Rack)
+    const shade = Math.max(0.18, 1 - perpDist / 13);
+    const texCoord = (hitX + hitY) % 1;
+
+    if (hitWall === 2) {
+      ctx.fillStyle = texCoord > 0.45 && texCoord < 0.55
+        ? `rgba(253, 224, 71, ${shade})`
+        : `rgba(${Math.floor(190 * shade)}, ${Math.floor(24 * shade)}, ${Math.floor(93 * shade)}, 1)`;
+    } else if (hitWall === 3) {
+      ctx.fillStyle = texCoord > 0.4 && texCoord < 0.6
+        ? `rgba(56, 189, 248, ${shade})`
+        : `rgba(${Math.floor(30 * shade)}, ${Math.floor(58 * shade)}, ${Math.floor(138 * shade)}, 1)`;
+    } else {
+      ctx.fillStyle = (r % 2 === 0)
+        ? `rgba(${Math.floor(71 * shade)}, ${Math.floor(85 * shade)}, ${Math.floor(105 * shade)}, 1)`
+        : `rgba(${Math.floor(51 * shade)}, ${Math.floor(65 * shade)}, ${Math.floor(85 * shade)}, 1)`;
+    }
+
+    ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH);
+  }
+
+  // 3. Sort & Draw 3D Billboard Monsters (Painter's algorithm with zBuffer check)
+  const sortedEnemies = [...doom.enemies].map(e => {
+    const dx = e.x - doom.px;
+    const dy = e.y - doom.py;
+    return { e, dist: Math.hypot(dx, dy), angle: Math.atan2(dy, dx) };
+  }).sort((a, b) => b.dist - a.dist);
+
+  for (const item of sortedEnemies) {
+    let relAngle = item.angle - doom.pa;
+    while (relAngle < -Math.PI) relAngle += Math.PI * 2;
+    while (relAngle > Math.PI) relAngle -= Math.PI * 2;
+
+    if (Math.abs(relAngle) < fov * 0.75 && item.dist > 0.35) {
+      const screenX = (0.5 + relAngle / fov) * W;
+      const rayIdx = Math.floor((screenX / W) * numRays);
+      if (rayIdx >= 0 && rayIdx < numRays && zBuffer[rayIdx] > item.dist - 0.3) {
+        const spriteSize = Math.min(viewH * 0.95, (viewH * 0.78) / item.dist);
+        const screenY = halfH + spriteSize * 0.12 + Math.sin(doom.walkBob) * 4;
+        drawDoomMonsterSprite(ctx, screenX, screenY, spriteSize, item.e);
+      }
+    }
+  }
+
+  // 4. Central Crosshair (Medical Target)
+  ctx.strokeStyle = 'rgba(74, 222, 128, 0.85)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(W / 2, halfH, 12, 0, Math.PI * 2);
+  ctx.moveTo(W / 2 - 18, halfH); ctx.lineTo(W / 2 - 6, halfH);
+  ctx.moveTo(W / 2 + 6, halfH); ctx.lineTo(W / 2 + 18, halfH);
+  ctx.moveTo(W / 2, halfH - 18); ctx.lineTo(W / 2, halfH - 6);
+  ctx.moveTo(W / 2, halfH + 6); ctx.lineTo(W / 2, halfH + 18);
+  ctx.stroke();
+
+  // 5. First-Person DOOM Weapon in Bottom Center: "EXTENSION PATCH LAUNCHER 9000" (Syringe + Medical Cross Shotgun!)
+  const gunX = W / 2 + Math.cos(doom.walkBob * 0.5) * 8;
+  const gunY = viewH + doom.recoil * 3 + Math.abs(Math.sin(doom.walkBob)) * 6;
+
+  ctx.save();
+  ctx.translate(gunX, gunY);
+
+  // Muzzle Flash (Green/Cyan Antiseptic Patch Blast!)
+  if (doom.muzzleFlash > 0) {
+    const mfGrad = ctx.createRadialGradient(0, -115, 5, 0, -115, 65);
+    mfGrad.addColorStop(0, '#ffffff');
+    mfGrad.addColorStop(0.4, '#4ade80');
+    mfGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+    ctx.fillStyle = mfGrad;
+    ctx.beginPath();
+    ctx.arc(0, -115, 65, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('🩹 PATCH v2.4 DEPLOYED!', 0, -135);
+  }
+
+  // Twin Syringe Barrels filled with Glowing Green Antivirus/Penicillin Serum
+  ctx.fillStyle = '#334155';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.roundRect(-28, -95, 56, 95, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  // Glowing green serum tubes
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(-20, -82, 14, 58);
+  ctx.fillRect(6, -82, 14, 58);
+
+  // Needle / Patch Injector Nozzle at tip
+  ctx.fillStyle = '#e2e8f0';
+  ctx.fillRect(-16, -112, 8, 18);
+  ctx.fillRect(8, -112, 8, 18);
+
+  // White & Red Medical Cross on Gun Receiver
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(-18, -32, 36, 26);
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(-4, -29, 8, 20);
+  ctx.fillRect(-10, -23, 20, 8);
+
+  ctx.restore();
+
+  // Hurt / Cure screen flashes
+  if (doom.hurtFlash > 0) {
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.32)';
+    ctx.fillRect(0, 0, W, viewH);
+  }
+  if (doom.cureFlash > 0) {
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.25)';
+    ctx.fillRect(0, 0, W, viewH);
+  }
+
+  // 6. Classic DOOM 1993 Grey Stone Status Bar at the Bottom!
+  ctx.fillStyle = '#334155';
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 3;
+  ctx.fillRect(0, viewH, W, statusBarH);
+  ctx.strokeRect(0, viewH, W, statusBarH);
+
+  // Left: Patch Ammo & Weapon Info
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(10, viewH + 8, W * 0.34, statusBarH - 16);
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`❤️ ${Math.max(0, Math.ceil(doom.hp))} | 💉 ∞`, 10 + W * 0.17, viewH + 30);
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '800 10px monospace';
+  ctx.fillText('GLISSE GAUCHE = BOUGER', 10 + W * 0.17, viewH + 50);
+
+  // Center: Classic DOOM Guy / El Chapo Face Mugshot!
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(W / 2 - 34, viewH + 6, 68, statusBarH - 12);
+  drawLatinoHero(ctx, W / 2, viewH + 42, 20, 0, 0, false);
+
+  // Right: Big Red FIRE PATCH Button for Mobile!
+  const btnX = W * 0.64;
+  const btnW = W * 0.33;
+  ctx.fillStyle = '#dc2626';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(btnX, viewH + 8, btnW, statusBarH - 16, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🔥 TIRER PATCH', btnX + btnW / 2, viewH + 34);
+  ctx.fillStyle = '#fef08a';
+  ctx.font = '800 10px sans-serif';
+  ctx.fillText('(OU TOUCHE DROITE)', btnX + btnW / 2, viewH + 52);
+
+  // Draw Left Virtual Joystick if active
+  if (doom.moveJoy.active) {
+    ctx.strokeStyle = 'rgba(236, 72, 153, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(doom.moveJoy.startX, doom.moveJoy.startY, 44, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.8)';
+    ctx.beginPath(); ctx.arc(doom.moveJoy.curX, doom.moveJoy.curY, 18, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// =========================================================
+// MODE 5: CTA6 : SAN SORELOS (GTA 1-2 Top-Down -> 1st Person Colosse Heist!)
+// 46 rue du Prince, Sorel-Tracy, J3P 4J6
+// =========================================================
+let cta = {};
+
+// 14x14 3D Map of Colosse Office (46 rue du Prince):
+// 1 = Left Wall (Black & White Comic Mural: T-Rex, Top-Hat Egg, Centaur)
+// 2 = Back Wall (Iconic Mustard-Yellow Wall with Dark Doorway)
+// 3 = Right Wall & Arched White Columns with Warm Wall Sconces & Brick Alcove
+// 4 = Exit Door to 46 rue du Prince (Unlocks at 10,000$+)
+const CTA_MAP_SIZE = 14;
+const CTA_MAP = [
+  2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,3,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,1,0,0,0,0,3,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,3,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,1,0,0,0,0,3,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,3,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,0,0,0,0,0,0,0,0,0,0,0,0,3,
+  1,1,1,1,1,4,4,4,1,3,3,3,3,3
+];
+
+function initCTA6() {
+  currentMode = 'cta6';
+  particles = []; floatingTexts = []; flyingParts = [];
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'flex';
+  document.getElementById('hud-net-bar').style.display = 'block';
+  document.getElementById('btn-cam').style.display = 'none';
+  document.getElementById('hud-net-icon').textContent = '💰';
+  document.getElementById('hud-net-label').textContent = 'Butin (Obj: 10 000$)';
+
+  cta = {
+    paused: false,
+    phase: 'topdown', // 'topdown' (GTA 1-2 Sorel-Tracy) -> 'inside' (1st Person Colosse Office)
+    hp: 200,
+    maxHp: 200,
+    loot: 0,
+    targetLoot: 10000,
+    hurtFlash: 0,
+    lootFlash: 0,
+    walkBob: 0,
+    throwAnim: 0,
+    // Phase 1: GTA 1-2 Top-Down Coordinates in Sorel-Tracy (Rue du Prince)
+    td: {
+      px: 440,
+      py: 760,
+      angle: -Math.PI / 2,
+      inCar: false,
+      carX: 440,
+      carY: 670,
+      carAngle: -Math.PI / 2,
+      colosseDoorX: 590,
+      colosseDoorY: 410,
+      traffic: [
+        { x: 390, y: 150, vy: 2.6, color: '#38bdf8', name: 'Honda Civic Montée' },
+        { x: 475, y: 850, vy: -2.9, color: '#facc15', name: 'Pick-up Sorel' },
+        { x: 390, y: 620, vy: 2.4, color: '#a855f7', name: 'Pontiac Sunfire' }
+      ]
+    },
+    // Phase 2: 1st Person 3D Inside Colosse (46 rue du Prince)
+    px: 6.5,
+    py: 11.8,
+    pa: -Math.PI / 2, // Facing North toward the yellow back wall & comic mural!
+    items: [
+      { x: 2.5, y: 10.2, name: 'MacBook Pro M3 Max + Gourde Dev', val: 2400, kind: 'macbook', stolen: false },
+      { x: 5.5, y: 9.8,  name: 'Double Écran LG UltraFine + Bras', val: 1800, kind: 'lg_monitor', stolen: false },
+      { x: 2.5, y: 7.5,  name: 'MacBook Pro Design + Clavier', val: 2100, kind: 'macbook', stolen: false },
+      { x: 6.2, y: 7.2,  name: 'Écran LG 4K + Dock Thunderbolt', val: 1600, kind: 'lg_monitor', stolen: false },
+      { x: 11.5, y: 8.5, name: 'Guitare Électrique du Lounge Colosse', val: 1900, kind: 'guitar', stolen: false },
+      { x: 2.5, y: 4.8,  name: 'Station Mac Studio Ultra', val: 2800, kind: 'server', stolen: false },
+      { x: 6.5, y: 4.5,  name: 'Laptop ThinkPad + Écran LG', val: 1700, kind: 'macbook', stolen: false },
+      { x: 11.5, y: 4.2, name: 'Machine Espresso Italienne', val: 1500, kind: 'espresso', stolen: false },
+      { x: 4.5, y: 2.2,  name: 'Serveur Rack Colosse (Mur Jaune)', val: 2900, kind: 'server', stolen: false },
+      { x: 8.5, y: 2.4,  name: 'MacBook Pro du Boss + Casque', val: 2300, kind: 'macbook', stolen: false }
+    ],
+    janitor: {
+      x: 6.5,
+      y: 3.2,
+      speed: 0.020,
+      stunTimer: 0,
+      mopSwing: 0,
+      quoteTimer: 90,
+      currentQuote: '♪ Oh baby baby it\'s a wild world !'
+    },
+    companion: {
+      x: 10.5,
+      y: 5.2,
+      speed: 0.019,
+      stunTimer: 0,
+      whipSwing: 0,
+      quoteTimer: 110,
+      currentQuote: '💥 CLAC ! Touche pas aux laptops de Colosse !'
+    },
+    joy: { active: false, startX: 0, startY: 0, curX: 0, curY: 0, dx: 0, dy: 0, forward: 0, turn: 0 }
+  };
+
+  updateCTAHUD();
+  showToast('🚗 CTA6 SAN SORELOS : Entre au 46 rue du Prince (Bureaux de Colosse) !');
+}
+
+function updateCTAHUD() {
+  document.getElementById('hp-fill').style.width = Math.max(0, (cta.hp / cta.maxHp) * 100) + '%';
+  document.getElementById('net-fill').style.width = Math.min(100, (cta.loot / cta.targetLoot) * 100) + '%';
+  document.getElementById('hud-score').textContent = `💰 ${cta.loot.toLocaleString('fr-CA')} $`;
+}
+
+function triggerColosseBreakIn() {
+  if (cta.phase !== 'topdown') return;
+  cta.phase = 'inside';
+  cta.joy.active = false;
+  cta.joy.dx = 0; cta.joy.dy = 0; cta.joy.forward = 0; cta.joy.turn = 0;
+  playSound('boom');
+  showToast('🔓 BREAK-IN AU 46 RUE DU PRINCE ! Vole 10 000$+ et fuis le concierge & sa blonde au fouet !');
+}
+
+function performCTA6Action() {
+  if (cta.paused) return;
+
+  if (cta.phase === 'topdown') {
+    // Check if near car or near Colosse door
+    const distDoor = Math.hypot(cta.td.px - cta.td.colosseDoorX, cta.td.py - cta.td.colosseDoorY);
+    if (distDoor < 140) {
+      triggerColosseBreakIn();
+      return;
+    }
+    const distCar = Math.hypot(cta.td.px - cta.td.carX, cta.td.py - cta.td.carY);
+    if (!cta.td.inCar && distCar < 90) {
+      cta.td.inCar = true;
+      playSound('powerup');
+      showToast('🚗 CHAR VOLÉ SUR RUE DU PRINCE ! Fonce vers Colosse (46 rue du Prince) !');
+    } else {
+      // Dash toward Colosse entrance!
+      const a = Math.atan2(cta.td.colosseDoorY - cta.td.py, cta.td.colosseDoorX - cta.td.px);
+      cta.td.px += Math.cos(a) * 45;
+      cta.td.py += Math.sin(a) * 45;
+      cta.td.angle = a;
+      if (Math.hypot(cta.td.px - cta.td.colosseDoorX, cta.td.py - cta.td.colosseDoorY) < 65) {
+        triggerColosseBreakIn();
+      }
+    }
+    return;
+  }
+
+  // Inside Colosse (1st Person):
+  // 1. Steal any nearby equipment within 2.3 units!
+  let stoleSomething = false;
+  for (const it of cta.items) {
+    if (!it.stolen && Math.hypot(it.x - cta.px, it.y - cta.py) < 2.3) {
+      stealColosseItem(it);
+      stoleSomething = true;
+    }
+  }
+
+  // 2. Also throw a hot cup of Colosse coffee to stun the Janitor and/or his Blonde Companion if within 4.3 units!
+  cta.throwAnim = 10;
+  let stunnedAnyone = false;
+  for (const enemy of [cta.janitor, cta.companion]) {
+    const dist = Math.hypot(enemy.x - cta.px, enemy.y - cta.py);
+    if (dist < 4.3) {
+      enemy.stunTimer = 115; // Stunned for ~1.9 seconds!
+      const kdx = enemy.x - cta.px;
+      const kdy = enemy.y - cta.py;
+      const kd = Math.hypot(kdx, kdy) || 1;
+      const nx = enemy.x + (kdx / kd) * 1.15;
+      const ny = enemy.y + (kdy / kd) * 1.15;
+      if (CTA_MAP[Math.floor(enemy.y) * CTA_MAP_SIZE + Math.floor(nx)] === 0) enemy.x = nx;
+      if (CTA_MAP[Math.floor(ny) * CTA_MAP_SIZE + Math.floor(enemy.x)] === 0) enemy.y = ny;
+      enemy.currentQuote = enemy === cta.janitor
+        ? '☕ AÏE MON T-SHIRT DE CAT STEVENS !'
+        : '☕ AÏE ! ÇA BRÛLE MES 36E !';
+      enemy.quoteTimer = 85;
+      stunnedAnyone = true;
+    }
+  }
+  if (stunnedAnyone) {
+    playSound('hit');
+    showToast('☕ CAFÉ LANCÉ ! Gardiens étourdis !');
+  } else if (!stoleSomething) {
+    playSound('shoot');
+  }
+
+  // 3. Check if near exit door with >= 10,000$
+  if (cta.loot >= cta.targetLoot && cta.py > 10.6 && cta.px > 4.2 && cta.px < 8.8) {
+    endCTA6Game(true);
+  }
+}
+
+function stealColosseItem(it) {
+  if (it.stolen) return;
+  it.stolen = true;
+  cta.loot += it.val;
+  cta.lootFlash = 6;
+  playSound('cure');
+  updateCTAHUD();
+  if (cta.loot >= cta.targetLoot) {
+    showToast(`🚨 ${cta.loot.toLocaleString('fr-CA')} $ VOLÉS ! COURS VERS LA PORTE DE SORTIE (RUE DU PRINCE) !`);
+  } else {
+    showToast(`💰 VOLÉ : ${it.name} (+${it.val} $) !`);
+  }
+}
+
+function endCTA6Game(victory) {
+  cta.paused = true;
+  const modal = document.getElementById('modal-screen');
+  document.getElementById('modal-title').textContent = victory
+    ? '🏆 BRAQUAGE COLOSSE RÉUSSI (RESPECT +) !'
+    : '🧹 BATTU À COUPS DE VADROUILLE & DE FOUET !';
+  document.getElementById('modal-desc').textContent = victory
+    ? `Tu as dévalisé le 46 rue du Prince à Sorel-Tracy avec ${cta.loot.toLocaleString('fr-CA')} $ de laptops et d'écrans LG en échappant au concierge en t-shirt de Cat Stevens et à sa compagne blonde en G-string armée de son fouet !`
+    : `Le concierge (bobettes baissées + vadrouille) et sa compagne blonde (36E + G-string noir + fouet) t'ont coincé dans les bureaux de Colosse... Butin accumulé : ${cta.loot.toLocaleString('fr-CA')} $`;
+  const list = document.getElementById('upgrade-list');
+  list.innerHTML = `
+    <button class="upg-btn" onclick="initCTA6()"><span class="upg-icon">💻</span><div>Rejouer à CTA6 : San Sorelos</div></button>
+    <button class="upg-btn" onclick="initDoom()"><span class="upg-icon">💉</span><div>Jouer à WHORE PRESS</div></button>
+    <button class="upg-btn" onclick="initFlappy()"><span class="upg-icon">👓</span><div>Jouer à Flappy Roc</div></button>
+    <button class="upg-btn" onclick="goMenu()"><span class="upg-icon">🏠</span><div>Menu Principal</div></button>
+  `;
+  modal.style.display = 'flex';
+}
+
+function updateCTA6() {
+  if (cta.paused) return;
+
+  if (cta.phase === 'topdown') {
+    // Phase 1: GTA 1-2 Top-Down Sorel-Tracy Movement
+    let dx = cta.joy.dx;
+    let dy = cta.joy.dy;
+    if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+    if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+    if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
+    if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
+
+    const mag = Math.hypot(dx, dy);
+    if (mag > 0.05) {
+      const speed = cta.td.inCar ? 5.2 : 3.6;
+      const vx = (dx / mag) * speed;
+      const vy = (dy / mag) * speed;
+      cta.td.px = Math.max(180, Math.min(860, cta.td.px + vx));
+      cta.td.py = Math.max(120, Math.min(920, cta.td.py + vy));
+      cta.td.angle = Math.atan2(vy, vx);
+      cta.walkBob += 0.25;
+      if (cta.td.inCar) {
+        cta.td.carX = cta.td.px;
+        cta.td.carY = cta.td.py;
+        cta.td.carAngle = cta.td.angle;
+      }
+    }
+
+    // Update Rue du Prince traffic cars
+    for (const tc of cta.td.traffic) {
+      tc.y += tc.vy;
+      if (tc.vy > 0 && tc.y > 980) tc.y = 60;
+      if (tc.vy < 0 && tc.y < 60) tc.y = 980;
+    }
+
+    // Auto-enter if player walks onto the glowing 46 rue du Prince entrance marker!
+    if (Math.hypot(cta.td.px - cta.td.colosseDoorX, cta.td.py - cta.td.colosseDoorY) < 48) {
+      triggerColosseBreakIn();
+    }
+    return;
+  }
+
+  // Phase 2: 1st-Person 3D Inside Colosse Office
+  let moveStep = cta.joy.forward * 0.062;
+  let turnStep = cta.joy.turn * 0.048;
+
+  if (keys['KeyW'] || keys['ArrowUp']) moveStep += 0.062;
+  if (keys['KeyS'] || keys['ArrowDown']) moveStep -= 0.052;
+  if (keys['KeyA'] || keys['ArrowLeft']) turnStep -= 0.046;
+  if (keys['KeyD'] || keys['ArrowRight']) turnStep += 0.046;
+
+  cta.pa += turnStep;
+  if (Math.abs(moveStep) > 0.002) {
+    cta.walkBob += 0.24;
+    const nx = cta.px + Math.cos(cta.pa) * moveStep;
+    const ny = cta.py + Math.sin(cta.pa) * moveStep;
+    const pad = 0.28;
+    const tileX = CTA_MAP[Math.floor(cta.py) * CTA_MAP_SIZE + Math.floor(nx + Math.sign(nx - cta.px) * pad)];
+    const tileY = CTA_MAP[Math.floor(ny + Math.sign(ny - cta.py) * pad) * CTA_MAP_SIZE + Math.floor(cta.px)];
+
+    // Check if stepping through the Exit Door (tile === 4) with >= 10,000$!
+    if ((tileX === 4 || tileY === 4) && cta.loot >= cta.targetLoot) {
+      endCTA6Game(true);
+      return;
+    }
+
+    if (tileX === 0) cta.px = nx;
+    if (tileY === 0) cta.py = ny;
+  }
+
+  // Also check proximity to Exit Door (row 13, cols 5..7) when loot >= 10,000$
+  if (cta.loot >= cta.targetLoot && cta.py > 11.9 && cta.px > 4.6 && cta.px < 8.4) {
+    endCTA6Game(true);
+    return;
+  }
+
+  // Auto-steal laptops & equipment when walking close to a Colosse desk!
+  for (const it of cta.items) {
+    if (!it.stolen && Math.hypot(it.x - cta.px, it.y - cta.py) < 1.15) {
+      stealColosseItem(it);
+    }
+  }
+
+  if (cta.hurtFlash > 0) cta.hurtFlash--;
+  if (cta.lootFlash > 0) cta.lootFlash--;
+  if (cta.throwAnim > 0) cta.throwAnim--;
+
+  // Update the Cat Stevens Janitor with Dropped Briefs & Mop!
+  const j = cta.janitor;
+  j.mopSwing += 0.18;
+  if (j.quoteTimer > 0) j.quoteTimer--;
+  else {
+    const quotes = [
+      '♪ Oh baby baby it\'s a wild world !',
+      'Touche pas aux MacBooks de Colosse !',
+      'J\'viens d\'passer la vadrouille au 46 du Prince !',
+      '♪ Moonshadow, moonshadow... Arrête voleur !',
+      'Mes bobettes glissent mais j\'vais t\'pogner !'
+    ];
+    j.currentQuote = quotes[Math.floor(Math.random() * quotes.length)];
+    j.quoteTimer = 140;
+  }
+
+  if (j.stunTimer > 0) {
+    j.stunTimer--;
+  } else {
+    const dx = cta.px - j.x;
+    const dy = cta.py - j.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist > 0.72) {
+      const mx = (dx / dist) * j.speed;
+      const my = (dy / dist) * j.speed;
+      if (CTA_MAP[Math.floor(j.y) * CTA_MAP_SIZE + Math.floor(j.x + mx * 4)] === 0) j.x += mx;
+      if (CTA_MAP[Math.floor(j.y + my * 4) * CTA_MAP_SIZE + Math.floor(j.x)] === 0) j.y += my;
+    } else {
+      cta.hp -= 0.11;
+      if (Math.random() < 0.3) cta.hurtFlash = 3;
+      updateCTAHUD();
+      if (cta.hp <= 0) {
+        endCTA6Game(false);
+        return;
+      }
+    }
+  }
+
+  // Update the Janitor's Blonde Companion (40s, wavy blonde hair, topless 36E, black G-string & whip!)
+  const c = cta.companion;
+  c.whipSwing += 0.20;
+  if (c.quoteTimer > 0) c.quoteTimer--;
+  else {
+    const cQuotes = [
+      '💥 CLAC ! Lâche ce MacBook ou j\'te fouette !',
+      'Touche pas aux écrans LG de mon homme !',
+      '💥 Mon fouet va te zébrer les fesses !',
+      'Personne vole au 46 rue du Prince !'
+    ];
+    c.currentQuote = cQuotes[Math.floor(Math.random() * cQuotes.length)];
+    c.quoteTimer = 135;
+  }
+
+  if (c.stunTimer > 0) {
+    c.stunTimer--;
+  } else {
+    const cdx = cta.px - c.x;
+    const cdy = cta.py - c.y;
+    const cdist = Math.hypot(cdx, cdy);
+
+    if (cdist > 0.76) {
+      const mx = (cdx / cdist) * c.speed;
+      const my = (cdy / cdist) * c.speed;
+      if (CTA_MAP[Math.floor(c.y) * CTA_MAP_SIZE + Math.floor(c.x + mx * 4)] === 0) c.x += mx;
+      if (CTA_MAP[Math.floor(c.y + my * 4) * CTA_MAP_SIZE + Math.floor(c.x)] === 0) c.y += my;
+    } else {
+      cta.hp -= 0.11;
+      if (Math.random() < 0.3) cta.hurtFlash = 3;
+      updateCTAHUD();
+      if (cta.hp <= 0) {
+        endCTA6Game(false);
+        return;
+      }
+    }
+  }
+}
+
+// Draw Top-Down GTA 1-2 View of Sorel-Tracy (46 rue du Prince)
+function drawCTA6TopDown() {
+  const td = cta.td;
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(0, 0, W, H);
+
+  const camX = td.px - W / 2;
+  const camY = td.py - H / 2;
+
+  ctx.save();
+  ctx.translate(-camX, -camY);
+
+  // 1. Richelieu River on the Left (Quai de Sorel-Tracy)
+  ctx.fillStyle = '#0369a1';
+  ctx.fillRect(-200, 0, 420, 1200);
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 3;
+  for (let wy = 100; wy < 1100; wy += 90) {
+    ctx.beginPath();
+    ctx.moveTo(40, wy + Math.sin(Date.now() * 0.003 + wy) * 8);
+    ctx.lineTo(160, wy + Math.cos(Date.now() * 0.003 + wy) * 8);
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#bae6fd';
+  ctx.font = '900 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('🌊 RIVIÈRE RICHELIEU', 110, 520);
+
+  // 2. City Blocks & Sidewalks
+  ctx.fillStyle = '#64748b';
+  ctx.fillRect(220, 0, 800, 1200);
+
+  // Main Road: RUE DU PRINCE (Vertical) & RUE AUGUSTA (Horizontal)
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(340, 0, 190, 1200); // Rue du Prince
+  ctx.fillRect(220, 180, 800, 130); // Rue Augusta
+
+  // Yellow Dashed Center Lines on Rue du Prince
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 4;
+  ctx.setLineDash([22, 18]);
+  ctx.beginPath();
+  ctx.moveTo(435, 0); ctx.lineTo(435, 1200);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Street Name Stencils on Asphalt (GTA 1-2 Style!)
+  ctx.save();
+  ctx.translate(365, 620);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '900 18px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('RUE DU PRINCE • SOREL-TRACY', 0, 0);
+  ctx.restore();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.font = '900 16px monospace';
+  ctx.fillText('RUE AUGUSTA', 690, 250);
+
+  // 3. Target Building: COLOSSE — 46 RUE DU PRINCE, SOREL-TRACY (J3P 4J6)
+  ctx.fillStyle = '#1c1917';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 5;
+  ctx.fillRect(565, 330, 310, 220);
+  ctx.strokeRect(565, 330, 310, 220);
+
+  // Roof details (HVAC units + Skylight showing the yellow wall & hardwood floor inside!)
+  ctx.fillStyle = '#92400e';
+  ctx.fillRect(585, 350, 270, 180);
+  ctx.fillStyle = '#eab308';
+  ctx.fillRect(585, 350, 270, 22); // Yellow back wall seen through skylight!
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 22px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🏢 BUREAUX COLOSSE', 720, 415);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '800 14px monospace';
+  ctx.fillText('46 RUE DU PRINCE', 720, 442);
+  ctx.fillText('SOREL-TRACY, J3P 4J6', 720, 462);
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '900 13px monospace';
+  ctx.fillText('💻 +16 000 $ DE LAPTOPS À VOLER', 720, 495);
+
+  // Neighboring Sorel Buildings (Taverne / Poutine / Garage)
+  ctx.fillStyle = '#3f3f46';
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 3;
+  ctx.fillRect(565, 590, 280, 160);
+  ctx.strokeRect(565, 590, 280, 160);
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = '800 14px monospace';
+  ctx.fillText('🍺 BAR DU FLEUVE (52 DU PRINCE)', 705, 670);
+
+  // 4. Glowing Break-In Zone at 46 rue du Prince Doorway!
+  const pulse = Math.sin(Date.now() * 0.008) * 6;
+  ctx.fillStyle = 'rgba(34, 197, 94, 0.35)';
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(td.colosseDoorX, td.colosseDoorY, 36 + pulse, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 13px sans-serif';
+  ctx.fillText('🔓 ENTRER (BREAK-IN)', td.colosseDoorX - 20, td.colosseDoorY - 46);
+
+  // 5. Traffic Cars & Player's Stealable Red Muscle Car (GTA 1-2 Top-Down Sprites)
+  for (const tc of td.traffic) {
+    drawTopDownCar(ctx, tc.x, tc.y, tc.vy > 0 ? Math.PI / 2 : -Math.PI / 2, tc.color);
+  }
+  drawTopDownCar(ctx, td.carX, td.carY, td.carAngle, '#ef4444', true);
+
+  // 6. Player Character on Foot (if not in car)
+  if (!td.inCar) {
+    drawLatinoHero(ctx, td.px, td.py, 17, td.angle, cta.walkBob, false);
+  }
+
+  // GPS Arrow pointing directly to 46 rue du Prince Door!
+  const aToDoor = Math.atan2(td.colosseDoorY - td.py, td.colosseDoorX - td.px);
+  const arrowX = td.px + Math.cos(aToDoor) * 58;
+  const arrowY = td.py + Math.sin(aToDoor) * 58;
+  ctx.save();
+  ctx.translate(arrowX, arrowY);
+  ctx.rotate(aToDoor);
+  ctx.fillStyle = '#4ade80';
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(16, 0); ctx.lineTo(-10, -11); ctx.lineTo(-6, 0); ctx.lineTo(-10, 11);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.restore();
+
+  // Bottom HUD Bar for GTA 1-2 Top-Down Phase
+  const barH = 72;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+  ctx.strokeStyle = '#22c55e';
+  ctx.lineWidth = 3;
+  ctx.fillRect(0, H - barH, W, barH);
+  ctx.strokeRect(0, H - barH, W, barH);
+
+  ctx.fillStyle = '#4ade80';
+  ctx.font = '900 13px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText('📍 46 RUE DU PRINCE, SOREL-TRACY (J3P 4J6)', 14, H - barH + 26);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '700 11px sans-serif';
+  ctx.fillText('Glisse à gauche pour marcher/conduire vers la porte de COLOSSE', 14, H - barH + 48);
+
+  const btnX = W * 0.62;
+  const btnW = W * 0.35;
+  ctx.fillStyle = '#16a34a';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(btnX, H - barH + 10, btnW, barH - 20, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🔓 BREAK-IN COLOSSE', btnX + btnW / 2, H - barH + 34);
+  ctx.fillStyle = '#fef08a';
+  ctx.font = '800 10px sans-serif';
+  ctx.fillText('(ENTRER EN 1ST PERSON)', btnX + btnW / 2, H - barH + 50);
+
+  if (cta.joy.active) {
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cta.joy.startX, cta.joy.startY, 42, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.85)';
+    ctx.beginPath(); ctx.arc(cta.joy.curX, cta.joy.curY, 18, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawTopDownCar(ctx, x, y, angle, color, isPlayerCar = false) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+
+  // Headlight beams (GTA 2 style!)
+  const beam = ctx.createLinearGradient(20, 0, 85, 0);
+  beam.addColorStop(0, 'rgba(254, 240, 138, 0.35)');
+  beam.addColorStop(1, 'rgba(254, 240, 138, 0)');
+  ctx.fillStyle = beam;
+  ctx.beginPath();
+  ctx.moveTo(22, -12); ctx.lineTo(85, -32); ctx.lineTo(85, 32); ctx.lineTo(22, 12);
+  ctx.closePath();
+  ctx.fill();
+
+  // Tires
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-18, -17, 10, 4);
+  ctx.fillRect(10, -17, 10, 4);
+  ctx.fillRect(-18, 13, 10, 4);
+  ctx.fillRect(10, 13, 10, 4);
+
+  // Car Body
+  ctx.fillStyle = color;
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-24, -14, 48, 28, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  // Windshield & Rear Window
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(-6, -11, 16, 22);
+  ctx.fillStyle = color;
+  ctx.fillRect(-4, -9, 9, 18);
+
+  if (isPlayerCar) {
+    // Racing stripes
+    ctx.fillStyle = '#fde047';
+    ctx.fillRect(-22, -2, 44, 4);
+  }
+  ctx.restore();
+}
+
+// Draw 3D Billboarded Equipment on Wooden Desks inside Colosse!
+function drawColosseDeskItemSprite(ctx, sx, sy, size, it) {
+  ctx.save();
+  ctx.translate(sx, sy);
+  const scale = size / 100;
+  ctx.scale(scale, scale);
+
+  // Shadow on hardwood floor
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 44, 38, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Black Steel Standing Desk Legs (just like the Colosse photo!)
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(-30, 8, 6, 36);
+  ctx.fillRect(24, 8, 6, 36);
+
+  // Warm Oak Wooden Desk Tabletop
+  ctx.fillStyle = '#b45309';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-38, 0, 76, 10, 3);
+  ctx.fill();
+  ctx.stroke();
+
+  if (!it.stolen) {
+    // Draw the Stealable High-Value Tech Item on the Desk!
+    if (it.kind === 'macbook') {
+      // Silver MacBook Pro + Dev Water Bottle (from photo!)
+      ctx.fillStyle = '#cbd5e1';
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 2;
+      ctx.fillRect(-18, -22, 30, 20);
+      ctx.strokeRect(-18, -22, 30, 20);
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(-15, -19, 24, 14);
+      // Grey shaker/water bottle next to laptop
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(16, -18, 9, 18);
+    } else if (it.kind === 'lg_monitor') {
+      // Articulated Black Arm + Large Matte Black LG Monitor (exact photo match!)
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-3, -12, 6, 12);
+      ctx.fillStyle = '#1e293b';
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 2;
+      ctx.fillRect(-28, -36, 56, 28);
+      ctx.strokeRect(-28, -36, 56, 28);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '900 8px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('LG', 0, -20);
+    } else if (it.kind === 'guitar') {
+      // Electric Guitar on Stand (from right lounge in photo!)
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath();
+      ctx.arc(0, -12, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fef3c7';
+      ctx.fillRect(-3, -42, 6, 30);
+    } else {
+      // Server / Espresso / Mac Studio
+      ctx.fillStyle = '#334155';
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2;
+      ctx.fillRect(-20, -28, 40, 28);
+      ctx.strokeRect(-20, -28, 40, 28);
+    }
+
+    // Floating Green Price Tag above the item
+    ctx.fillStyle = 'rgba(6, 78, 59, 0.92)';
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-34, -58, 68, 18, 6);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 10px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(`💰 +${it.val}$`, 0, -46);
+  } else {
+    // Empty desk with dangling cut cables after theft!
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '800 9px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('✓ VOLÉ !', 0, -10);
+  }
+
+  ctx.restore();
+}
+
+// Draw the Janitor in his Cat Stevens T-Shirt, White Cap, Dark Sunglasses, Grey Goatee,
+// Dropped Briefs around his ankles, Dangling Willy, and Wet Mop!
+function drawColosseJanitorSprite(ctx, sx, sy, size, j) {
+  ctx.save();
+  ctx.translate(sx, sy);
+  const scale = size / 100;
+  ctx.scale(scale, scale);
+
+  const swing = Math.sin(j.mopSwing) * 4;
+
+  // Floor shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 48, 30, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 1. Bare Hairy Legs
+  ctx.fillStyle = '#f1c27d';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2;
+  ctx.fillRect(-16, 12, 11, 32);
+  ctx.strokeRect(-16, 12, 11, 32);
+  ctx.fillRect(5, 12, 11, 32);
+  ctx.strokeRect(5, 12, 11, 32);
+
+  // 2. White Briefs ("Bobettes baissées") bunched down around his ankles!
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-20, 32, 40, 11, 4);
+  ctx.fill();
+  ctx.stroke();
+  // Elastic blue waistband on the dropped briefs
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(-19, 32, 38, 3);
+
+  // Sneakers
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(-19, 42, 14, 7);
+  ctx.fillRect(5, 42, 14, 7);
+
+  // 3. Exposed Groin / Dangling Cartoon Penis ("pénis à l'air" swinging as he runs!)
+  ctx.fillStyle = '#fca5a5';
+  ctx.strokeStyle = '#991b1b';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.arc(-4, 15, 4.5, 0, Math.PI * 2);
+  ctx.arc(4, 15, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.roundRect(-3.5 + swing * 0.3, 13, 7, 14, 3.5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#f87171';
+  ctx.beginPath();
+  ctx.arc(swing * 0.3, 26, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Red/Orange T-Shirt of CAT STEVENS (matches reference photo red shirt + Cat Stevens print!)
+  ctx.fillStyle = '#dc2626';
+  ctx.strokeStyle = '#7f1d1d';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-24, -18, 48, 31, 8);
+  ctx.fill();
+  ctx.stroke();
+
+  // sleeves
+  ctx.fillRect(-31, -16, 9, 16);
+  ctx.fillRect(22, -16, 9, 16);
+
+  // Cat Stevens Album Graphic + "CAT STEVENS" Gold Print on his T-Shirt
+  ctx.fillStyle = '#fde047';
+  ctx.beginPath();
+  ctx.arc(0, -6, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#1c1917';
+  ctx.font = '900 5.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🎸', 0, -4);
+  ctx.fillStyle = '#fef08a';
+  ctx.font = '900 6.5px monospace';
+  ctx.fillText('CAT STEVENS', 0, 6);
+  ctx.font = '700 5px monospace';
+  ctx.fillText('WILD WORLD', 0, 11);
+
+  // 5. Head (Matches Reference Photo: Warm skin, Grey/White Circle Goatee, Dark Sunglasses, White Cap!)
+  ctx.fillStyle = '#f1c27d';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -31, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Grey/White Circle Goatee & Mustache ("barbichette grise")
+  ctx.fillStyle = '#d1d5db';
+  ctx.strokeStyle = '#6b7280';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, -23, 8.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Mouth grin inside goatee
+  ctx.fillStyle = '#7f1d1d';
+  ctx.beginPath();
+  ctx.arc(0, -23, 4.5, 0, Math.PI);
+  ctx.fill();
+
+  // Dark Aviator/Square Sunglasses (from reference photo!)
+  ctx.fillStyle = '#090d16';
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.roundRect(-13, -36, 11, 7, 2);
+  ctx.roundRect(2, -36, 11, 7, 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-2, -33); ctx.lineTo(2, -33);
+  ctx.stroke();
+
+  // White Baseball Cap with Red Emblem on Front (from reference photo!)
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, -35, 16, Math.PI, 0);
+  ctx.fill();
+  ctx.stroke();
+  // Cap visor
+  ctx.beginPath();
+  ctx.ellipse(0, -36, 18, 4.5, 0, 0, Math.PI);
+  ctx.fill();
+  ctx.stroke();
+  // Little orange/red logo on cap crown
+  ctx.fillStyle = '#ea580c';
+  ctx.beginPath();
+  ctx.arc(0, -43, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 6. The Mop ("Vadrouille") Brandished in Right Hand!
+  ctx.save();
+  ctx.translate(28, -5);
+  ctx.rotate(0.25 + Math.sin(j.mopSwing) * 0.25);
+  // Wooden mop handle
+  ctx.fillStyle = '#b45309';
+  ctx.strokeStyle = '#451a03';
+  ctx.lineWidth = 1.5;
+  ctx.fillRect(-2.5, -42, 5, 72);
+  ctx.strokeRect(-2.5, -42, 5, 72);
+  // Wet soapy grey/blue mop strings at top
+  ctx.fillStyle = '#cbd5e1';
+  ctx.strokeStyle = '#64748b';
+  ctx.beginPath();
+  ctx.roundRect(-14, -54, 28, 16, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  // 7. Floating Name & Cat Stevens Quote Bubble above Janitor
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(-58, -74, 116, 18, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 7.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(j.stunTimer > 0 ? '💫 ÉTOURDI PAR LE CAFÉ !' : j.currentQuote, 0, -62);
+
+  ctx.restore();
+}
+
+// Draw the Janitor's Companion: Woman in her 40s with Wavy Blonde Hair,
+// Topless with Large Slightly Pendulous Breasts (36E), Black G-String, and a Whip!
+function drawColosseCompanionSprite(ctx, sx, sy, size, c) {
+  ctx.save();
+  ctx.translate(sx, sy);
+  const scale = size / 100;
+  ctx.scale(scale, scale);
+
+  const bounce = Math.sin(c.whipSwing * 1.2) * 2.5;
+
+  // Floor shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.ellipse(0, 48, 28, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 1. Bare Legs + Black Stiletto High Heels
+  ctx.fillStyle = '#f5cba7';
+  ctx.strokeStyle = '#9a6b4c';
+  ctx.lineWidth = 2;
+  ctx.fillRect(-15, 10, 10, 32);
+  ctx.strokeRect(-15, 10, 10, 32);
+  ctx.fillRect(5, 10, 10, 32);
+  ctx.strokeRect(5, 10, 10, 32);
+
+  // Black high-heel pumps
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-17, 41, 13, 7);
+  ctx.fillRect(4, 41, 13, 7);
+
+  // 2. Curvy Hips & Waist + Black G-String ("porte un G-string noir")
+  ctx.fillStyle = '#f5cba7';
+  ctx.strokeStyle = '#9a6b4c';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-20, -18, 40, 31, 10);
+  ctx.fill();
+  ctx.stroke();
+
+  // Black G-string thin side straps & center triangle
+  ctx.strokeStyle = '#090d16';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-20, 4); ctx.lineTo(20, 4);
+  ctx.stroke();
+  ctx.fillStyle = '#090d16';
+  ctx.beginPath();
+  ctx.moveTo(-10, 4);
+  ctx.lineTo(10, 4);
+  ctx.lineTo(0, 17);
+  ctx.closePath();
+  ctx.fill();
+
+  // Bare arms
+  ctx.fillStyle = '#f5cba7';
+  ctx.fillRect(-27, -16, 8, 22);
+  ctx.strokeRect(-27, -16, 8, 22);
+  ctx.fillRect(19, -16, 8, 22);
+  ctx.strokeRect(19, -16, 8, 22);
+
+  // 3. Large Slightly Pendulous Topless Chest ("Seins à l'air 36E pendant un peu, forte poitrine")
+  ctx.fillStyle = '#f5cba7';
+  ctx.strokeStyle = '#9a6b4c';
+  ctx.lineWidth = 2.2;
+  // Left 36E breast (full & slightly pendulous teardrop oval)
+  ctx.beginPath();
+  ctx.ellipse(-10, -2 + bounce * 0.5, 11.5, 14.5, 0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Right 36E breast
+  ctx.beginPath();
+  ctx.ellipse(10, -2 - bounce * 0.5, 11.5, 14.5, -0.12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Areolas / nipples on lower-center of the pendulous 36E curves
+  ctx.fillStyle = '#e17070';
+  ctx.beginPath();
+  ctx.arc(-11, 5 + bounce * 0.5, 3.2, 0, Math.PI * 2);
+  ctx.arc(11, 5 - bounce * 0.5, 3.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#be123c';
+  ctx.beginPath();
+  ctx.arc(-11, 5 + bounce * 0.5, 1.5, 0, Math.PI * 2);
+  ctx.arc(11, 5 - bounce * 0.5, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 4. Wavy Blonde Hair cascading down shoulders + 40s Woman Face
+  // Back wavy blonde hair volume
+  ctx.fillStyle = '#facc15';
+  ctx.strokeStyle = '#a16207';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(-15, -28, 12, 0, Math.PI * 2);
+  ctx.arc(15, -28, 12, 0, Math.PI * 2);
+  ctx.arc(-17, -16, 9, 0, Math.PI * 2);
+  ctx.arc(17, -16, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Face
+  ctx.fillStyle = '#f5cba7';
+  ctx.strokeStyle = '#9a6b4c';
+  ctx.beginPath();
+  ctx.arc(0, -32, 14.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Top wavy blonde hair waves framing face
+  ctx.fillStyle = '#fde047';
+  ctx.strokeStyle = '#a16207';
+  ctx.beginPath();
+  ctx.arc(0, -37, 15.5, Math.PI * 0.85, Math.PI * 2.15);
+  ctx.fill();
+  ctx.stroke();
+
+  // Eyes, eyeshadow & bold red lipstick (40s look)
+  ctx.fillStyle = '#1e293b';
+  ctx.beginPath();
+  ctx.arc(-5.5, -33, 2.2, 0, Math.PI * 2);
+  ctx.arc(5.5, -33, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#dc2626';
+  ctx.beginPath();
+  ctx.ellipse(0, -25, 5.5, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 5. Black Leather Whip ("tient un fouet") in Right Hand!
+  ctx.save();
+  ctx.translate(25, -4);
+  const whipAngle = Math.sin(c.whipSwing) * 0.45;
+  ctx.rotate(whipAngle);
+  // Whip handle
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-3, -18, 6, 20);
+  // Long sinuous leather whip lash curving through the air
+  ctx.strokeStyle = '#090d16';
+  ctx.lineWidth = 3.5;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(0, -18);
+  ctx.bezierCurveTo(22, -38, -14, -55, 26 + Math.cos(c.whipSwing) * 12, -68);
+  ctx.stroke();
+  // Red whip cracker tip
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.arc(26 + Math.cos(c.whipSwing) * 12, -68, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // 6. Floating Quote Bubble above the Blonde Companion
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.strokeStyle = '#ec4899';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(-58, -74, 116, 18, 6);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#fbcfe8';
+  ctx.font = '900 7.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(c.stunTimer > 0 ? '💫 ÉTOURDIE PAR LE CAFÉ !' : c.currentQuote, 0, -62);
+
+  ctx.restore();
+}
+
+function drawCTA6Inside() {
+  const statusBarH = 74;
+  const viewH = H - statusBarH;
+  const halfH = viewH / 2;
+
+  // 1. Ceiling (Warm Recessed Office Ceiling from Colosse Photo) & Hardwood Strip Floor!
+  const ceilGrad = ctx.createLinearGradient(0, 0, 0, halfH);
+  ceilGrad.addColorStop(0, '#d6d3d1');
+  ceilGrad.addColorStop(1, '#a8a29e');
+  ctx.fillStyle = ceilGrad;
+  ctx.fillRect(0, 0, W, halfH);
+
+  // Warm Oak Hardwood Floor (matches Colosse photo!)
+  const floorGrad = ctx.createLinearGradient(0, halfH, 0, viewH);
+  floorGrad.addColorStop(0, '#92400e');
+  floorGrad.addColorStop(0.5, '#b45309');
+  floorGrad.addColorStop(1, '#78350f');
+  ctx.fillStyle = floorGrad;
+  ctx.fillRect(0, halfH, W, halfH);
+
+  // 2. Raycasting 3D Walls of the Colosse Office (64 vertical strips)
+  const numRays = 64;
+  const fov = Math.PI / 3;
+  const stripW = Math.ceil(W / numRays);
+  const zBuffer = new Array(numRays).fill(999);
+
+  for (let r = 0; r < numRays; r++) {
+    const rayAngle = (cta.pa - fov / 2) + (r / numRays) * fov;
+    const cosA = Math.cos(rayAngle);
+    const sinA = Math.sin(rayAngle);
+
+    let dist = 0;
+    let hitWall = 0;
+    let hitX = 0, hitY = 0;
+    while (dist < 16) {
+      dist += 0.04;
+      hitX = cta.px + cosA * dist;
+      hitY = cta.py + sinA * dist;
+      const mx = Math.floor(hitX);
+      const my = Math.floor(hitY);
+      if (mx < 0 || mx >= CTA_MAP_SIZE || my < 0 || my >= CTA_MAP_SIZE) {
+        hitWall = 1;
+        break;
+      }
+      const cell = CTA_MAP[my * CTA_MAP_SIZE + mx];
+      if (cell > 0) {
+        hitWall = cell;
+        break;
+      }
+    }
+
+    const perpDist = dist * Math.cos(rayAngle - cta.pa);
+    zBuffer[r] = perpDist;
+
+    const wallH = Math.min(viewH * 1.4, (viewH * 0.88) / Math.max(0.15, perpDist));
+    const wallTop = halfH - wallH / 2;
+    const shade = Math.max(0.32, 1 - perpDist / 14);
+    const texCoord = (hitX + hitY) % 1;
+
+    if (hitWall === 1) {
+      // LEFT WALL: Iconic Black & White Comic Mural above White Wainscoting (from Colosse photo!)
+      const wainscotTop = wallTop + wallH * 0.68;
+      // Upper 68%: White mural canvas with bold black comic shapes!
+      ctx.fillStyle = `rgb(${Math.floor(245 * shade)}, ${Math.floor(245 * shade)}, ${Math.floor(240 * shade)})`;
+      ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH * 0.68);
+
+      // Black comic ink patterns (T-Rex teeth, rings, centaur silhouettes)
+      const muralPattern = Math.sin( (hitX + hitY) * 6.5 ) * Math.cos( (hitY - hitX) * 4.2 );
+      if (muralPattern > 0.15) {
+        ctx.fillStyle = `rgb(${Math.floor(24 * shade)}, ${Math.floor(24 * shade)}, ${Math.floor(27 * shade)})`;
+        const inkY = wallTop + wallH * (0.12 + Math.abs(Math.sin(hitY * 3)) * 0.25);
+        const inkH = wallH * (0.18 + Math.abs(Math.cos(hitX * 5)) * 0.22);
+        ctx.fillRect(r * stripW, inkY, stripW + 1, inkH);
+      }
+
+      // Lower 32%: Off-white wainscoting panel
+      ctx.fillStyle = `rgb(${Math.floor(225 * shade)}, ${Math.floor(220 * shade)}, ${Math.floor(208 * shade)})`;
+      ctx.fillRect(r * stripW, wainscotTop, stripW + 1, wallH * 0.32);
+    } else if (hitWall === 2) {
+      // BACK WALL: Iconic Mustard-Yellow Wall with Dark Center Doorway (from Colosse photo!)
+      if (hitX > 6.1 && hitX < 7.6) {
+        // Dark doorway in center of yellow wall
+        ctx.fillStyle = `rgb(${Math.floor(20 * shade)}, ${Math.floor(24 * shade)}, ${Math.floor(32 * shade)})`;
+      } else {
+        ctx.fillStyle = `rgb(${Math.floor(234 * shade)}, ${Math.floor(179 * shade)}, ${Math.floor(8 * shade)})`;
+      }
+      ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH);
+    } else if (hitWall === 3) {
+      // RIGHT WALL & WHITE ARCHED COLUMNS with Warm Glowing Wall Sconces & Brick Alcove!
+      if (texCoord > 0.35 && texCoord < 0.65) {
+        // White column with warm glowing sconce in the middle!
+        ctx.fillStyle = `rgb(${Math.floor(242 * shade)}, ${Math.floor(238 * shade)}, ${Math.floor(230 * shade)})`;
+        ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH);
+        // Warm yellow-white wall sconce glow
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(r * stripW, wallTop + wallH * 0.32, stripW + 1, wallH * 0.14);
+      } else {
+        // Exposed red/brown brick alcove behind columns
+        ctx.fillStyle = `rgb(${Math.floor(135 * shade)}, ${Math.floor(68 * shade)}, ${Math.floor(48 * shade)})`;
+        ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH);
+      }
+    } else if (hitWall === 4) {
+      // EXIT DOOR TO 46 RUE DU PRINCE (Green when >= 10,000$, Red/Orange before!)
+      const unlocked = cta.loot >= cta.targetLoot;
+      ctx.fillStyle = unlocked
+        ? `rgb(${Math.floor(34 * shade)}, ${Math.floor(197 * shade)}, ${Math.floor(94 * shade)})`
+        : `rgb(${Math.floor(185 * shade)}, ${Math.floor(28 * shade)}, ${Math.floor(28 * shade)})`;
+      ctx.fillRect(r * stripW, wallTop, stripW + 1, wallH);
+    }
+  }
+
+  // 3. Hanging White Power Cords from Ceiling (signature detail from Colosse office photo!)
+  ctx.strokeStyle = 'rgba(248, 250, 252, 0.55)';
+  ctx.lineWidth = 2.5;
+  for (const cordX of [W * 0.28, W * 0.44, W * 0.72]) {
+    ctx.beginPath();
+    ctx.moveTo(cordX, 0);
+    ctx.quadraticCurveTo(cordX + Math.sin(cta.walkBob * 0.4) * 5, halfH * 0.6, cordX - 3, halfH * 1.15);
+    ctx.stroke();
+  }
+
+  // 4. Sort and Draw All 3D Sprites (10 Colosse Desks/Laptops + Cat Stevens Janitor + Blonde Companion with Whip!)
+  const sprites = [];
+  for (const it of cta.items) {
+    sprites.push({ kind: 'item', obj: it, x: it.x, y: it.y });
+  }
+  sprites.push({ kind: 'janitor', obj: cta.janitor, x: cta.janitor.x, y: cta.janitor.y });
+  sprites.push({ kind: 'companion', obj: cta.companion, x: cta.companion.x, y: cta.companion.y });
+
+  for (const sp of sprites) {
+    const dx = sp.x - cta.px;
+    const dy = sp.y - cta.py;
+    sp.dist = Math.hypot(dx, dy);
+    let spriteAngle = Math.atan2(dy, dx) - cta.pa;
+    while (spriteAngle < -Math.PI) spriteAngle += Math.PI * 2;
+    while (spriteAngle > Math.PI) spriteAngle -= Math.PI * 2;
+    sp.angle = spriteAngle;
+  }
+  sprites.sort((a, b) => b.dist - a.dist);
+
+  for (const sp of sprites) {
+    if (Math.abs(sp.angle) > fov * 0.85 || sp.dist < 0.3) continue;
+    const sx = (0.5 + sp.angle / fov) * W;
+    const size = Math.min(viewH * 1.15, (viewH * 0.82) / sp.dist);
+    const centerStrip = Math.floor((sx / W) * numRays);
+    if (centerStrip >= 0 && centerStrip < numRays && zBuffer[centerStrip] < sp.dist - 0.3) continue;
+
+    if (sp.kind === 'item') {
+      drawColosseDeskItemSprite(ctx, sx, halfH + size * 0.14, size, sp.obj);
+    } else if (sp.kind === 'janitor') {
+      drawColosseJanitorSprite(ctx, sx, halfH + size * 0.10, size * 1.15, sp.obj);
+    } else {
+      drawColosseCompanionSprite(ctx, sx, halfH + size * 0.10, size * 1.12, sp.obj);
+    }
+  }
+
+  // 5. Top Direction Banner (Shows Exit Direction once 10,000$+ is reached!)
+  if (cta.loot >= cta.targetLoot) {
+    ctx.fillStyle = 'rgba(22, 163, 74, 0.92)';
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - 170, 52, 340, 32, 99);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 12.5px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🚨 10 000$+ ATTEINT ! SORS PAR LA PORTE VERTE !', W / 2, 72);
+  }
+
+  // 6. First-Person Thief Hands holding Stolen MacBook + Hot Coffee Cup!
+  const handX = W / 2 + Math.cos(cta.walkBob * 0.5) * 8;
+  const handY = viewH + Math.abs(Math.sin(cta.walkBob)) * 6 - cta.throwAnim * 3;
+  ctx.save();
+  ctx.translate(handX, handY);
+
+  // Left hand holding loot bag / stolen MacBook Pro
+  ctx.fillStyle = '#cbd5e1';
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 3;
+  ctx.save();
+  ctx.rotate(-0.15);
+  ctx.fillRect(-105, -68, 68, 48);
+  ctx.strokeRect(-105, -68, 68, 48);
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '900 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('💻 COLOSSE', -71, -42);
+  ctx.restore();
+
+  // Right hand holding Hot Espresso Cup (to stun the janitor!)
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2.5;
+  ctx.fillRect(48, -64, 28, 38);
+  ctx.strokeRect(48, -64, 28, 38);
+  ctx.fillStyle = '#b45309';
+  ctx.fillRect(48, -50, 28, 12);
+  ctx.restore();
+
+  if (cta.hurtFlash > 0) {
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.32)';
+    ctx.fillRect(0, 0, W, viewH);
+  }
+  if (cta.lootFlash > 0) {
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.25)';
+    ctx.fillRect(0, 0, W, viewH);
+  }
+
+  // 7. Bottom Status Bar for CTA6 Inside Colosse
+  ctx.fillStyle = '#1c1917';
+  ctx.strokeStyle = '#eab308';
+  ctx.lineWidth = 3;
+  ctx.fillRect(0, viewH, W, statusBarH);
+  ctx.strokeRect(0, viewH, W, statusBarH);
+
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(10, viewH + 8, W * 0.50, statusBarH - 16);
+  ctx.fillStyle = cta.loot >= cta.targetLoot ? '#4ade80' : '#fde047';
+  ctx.font = '900 13.5px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`💰 BUTIN: ${cta.loot.toLocaleString('fr-CA')} $ / 10 000 $`, 18, viewH + 30);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '800 10px monospace';
+  ctx.fillText(`❤️ VIE: ${Math.max(0, Math.ceil(cta.hp))} | GLISSE GAUCHE = BOUGER`, 18, viewH + 50);
+
+  const btnX = W * 0.63;
+  const btnW = W * 0.34;
+  ctx.fillStyle = cta.loot >= cta.targetLoot ? '#16a34a' : '#ea580c';
+  ctx.strokeStyle = '#fde047';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(btnX, viewH + 8, btnW, statusBarH - 16, 10);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🖐️ VOLER / ☕ CAFÉ', btnX + btnW / 2, viewH + 33);
+  ctx.fillStyle = '#fef08a';
+  ctx.font = '800 9.5px sans-serif';
+  ctx.fillText('(ÉTOURDIR LE CONCIERGE)', btnX + btnW / 2, viewH + 51);
+
+  if (cta.joy.active) {
+    ctx.strokeStyle = 'rgba(234, 179, 8, 0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cta.joy.startX, cta.joy.startY, 44, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(74, 222, 128, 0.85)';
+    ctx.beginPath(); ctx.arc(cta.joy.curX, cta.joy.curY, 18, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawCTA6() {
+  if (cta.phase === 'topdown') {
+    drawCTA6TopDown();
+  } else {
+    drawCTA6Inside();
+  }
+}
+
+// =========================================================
+// MODE 6: ÉPLUCHETTE POOKIES (LA COUR DE CHEZ COLOSSE)
+// Deux filles aux cheveux châtain-brun transportent en hauteur
+// un gros chaudron d'eau chaude avec des blés d'inde dedans et
+// lancent son contenu sur les "Pookies" (surnom des sans-abris
+// voleurs de BBQ et de foyer dans la cour de chez Colosse) !
+// Objectif : 10 Pookies (sans-abris) tués pour gagner !
+// =========================================================
+const pookies = {
+  x: 0,
+  targetX: 0,
+  y: 128,
+  speed: 6.5,
+  kills: 0,
+  targetKills: 10,
+  score: 0,
+  lives: 3, // 3 équipements (BBQ / Foyers) avant défaite
+  tiltAnim: 0,
+  walkFrame: 0,
+  reloadTimer: 0,
+  aimX: 0,
+  aimY: 0,
+  paused: false,
+  thieves: [],
+  splashes: [], // Projectiles d'eau bouillante + blés d'inde en vol
+  puddles: [],  // Flaques d'eau bouillante fumante au sol
+  targets: [],  // Le BBQ noir 3 brûleurs, le Foyer/Brûleur Martin au propane, et le Foyer de patio
+  spawnTimer: 0
+};
+
+function initPookies() {
+  currentMode = 'pookies';
+  document.getElementById('menu-screen').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('hud-hp-wrap').style.display = 'flex';
+  document.getElementById('hud-net-wrap').style.display = 'flex';
+  document.getElementById('hud-net-bar').style.display = 'block';
+  document.getElementById('btn-cam').style.display = 'none';
+  document.getElementById('hud-net-icon').textContent = '🌽';
+  document.getElementById('hud-net-label').textContent = 'Pookies (0/10)';
+
+  pookies.x = W * 0.5;
+  pookies.targetX = W * 0.5;
+  pookies.y = 126;
+  pookies.kills = 0;
+  pookies.targetKills = 10;
+  pookies.score = 0;
+  pookies.lives = 3;
+  pookies.tiltAnim = 0;
+  pookies.walkFrame = 0;
+  pookies.reloadTimer = 0;
+  pookies.aimX = W * 0.5;
+  pookies.aimY = H * 0.58;
+  pookies.paused = false;
+  pookies.thieves = [];
+  pookies.splashes = [];
+  pookies.puddles = [];
+  pookies.spawnTimer = 35;
+
+  // Les 3 équipements convoités dans la cour de chez Colosse (d'après les photos !)
+  pookies.targets = [
+    {
+      id: 'bbq',
+      name: 'BBQ Noir 3 Brûleurs',
+      homeX: W * 0.64,
+      homeY: H * 0.50,
+      x: W * 0.64,
+      y: H * 0.50,
+      carrier: null,
+      stolen: false
+    },
+    {
+      id: 'foyer_propane',
+      name: 'Foyer / Brûleur Propane Martin',
+      homeX: W * 0.45,
+      homeY: H * 0.63,
+      x: W * 0.45,
+      y: H * 0.63,
+      carrier: null,
+      stolen: false
+    },
+    {
+      id: 'foyer_patio',
+      name: 'Foyer Extérieur de Cour',
+      homeX: W * 0.25,
+      homeY: H * 0.56,
+      x: W * 0.25,
+      y: H * 0.56,
+      carrier: null,
+      stolen: false
+    }
+  ];
+
+  // Spawn 2 initial Pookie thieves
+  spawnPookieThief();
+  spawnPookieThief();
+  updatePookiesHUD();
+  showToast('🌽 ÉPLUCHETTE POOKIES : Ébouillante 10 Pookies (sans-abris voleurs de BBQ & Foyer) !');
+}
+
+function updatePookiesHUD() {
+  document.getElementById('hp-fill').style.width = Math.max(0, (pookies.lives / 3) * 100) + '%';
+  document.getElementById('net-fill').style.width = Math.min(100, (pookies.kills / pookies.targetKills) * 100) + '%';
+  document.getElementById('hud-net-label').textContent = `Pookies: ${pookies.kills}/${pookies.targetKills}`;
+  document.getElementById('hud-score').textContent = `🌽 ${pookies.score} PTS`;
+}
+
+function spawnPookieThief() {
+  const availableTargets = pookies.targets.filter(t => !t.stolen);
+  if (availableTargets.length === 0) return;
+  const tgt = availableTargets[Math.floor(Math.random() * availableTargets.length)];
+
+  // Spawn from bottom alley, left fence gate, or right grass edge
+  const side = Math.random();
+  let sx, sy;
+  if (side < 0.45) {
+    sx = W * (0.12 + Math.random() * 0.76);
+    sy = H - 25;
+  } else if (side < 0.75) {
+    sx = 28;
+    sy = H * (0.48 + Math.random() * 0.36);
+  } else {
+    sx = W - 28;
+    sy = H * (0.52 + Math.random() * 0.34);
+  }
+
+  const quotes = [
+    "M'a voler le BBQ noir!",
+    "À moé le foyer au propane!",
+    "Check les pains à hot-dog!",
+    "Du bon métal pour la scrap!",
+    "J'embarque la bonbonne pis l'foyer!",
+    "Y'a du blé d'inde gratos icitte!"
+  ];
+  const colors = ['#57534e', '#3f6212', '#78350f', '#334155', '#4c1d95'];
+  const beanieColors = ['#991b1b', '#1e3a8a', '#365314', '#713f12', '#171717'];
+
+  pookies.thieves.push({
+    x: sx,
+    y: sy,
+    vx: 0,
+    vy: 0,
+    hp: 100,
+    maxHp: 100,
+    speed: 1.05 + Math.random() * 0.45 + pookies.kills * 0.05,
+    targetObj: tgt,
+    carrying: null,
+    coatColor: colors[Math.floor(Math.random() * colors.length)],
+    beanieColor: beanieColors[Math.floor(Math.random() * beanieColors.length)],
+    quote: quotes[Math.floor(Math.random() * quotes.length)],
+    quoteTimer: 110,
+    scaldTimer: 0,
+    walkPhase: Math.random() * 10
+  });
+}
+
+function throwPookiesCauldron(tx, ty) {
+  if (pookies.paused || pookies.reloadTimer > 0) return;
+
+  // Move the two girls toward target X and aim there
+  const clampedTargetX = Math.max(70, Math.min(W - 70, tx || pookies.x));
+  const clampedTargetY = Math.max(H * 0.34, Math.min(H - 65, ty || H * 0.56));
+  pookies.targetX = clampedTargetX;
+  pookies.aimX = clampedTargetX;
+  pookies.aimY = clampedTargetY;
+  pookies.tiltAnim = 1.0;
+  pookies.reloadTimer = 14;
+
+  playSound('shotgun');
+  playSound('launch');
+
+  // Launch a main boiling water deluge + 3 spinning corn cobs from the overhead cauldron!
+  const startX = pookies.x;
+  const startY = pookies.y - 26;
+
+  pookies.splashes.push({
+    startX,
+    startY,
+    x: startX,
+    y: startY,
+    tx: clampedTargetX,
+    ty: clampedTargetY,
+    progress: 0,
+    speed: 0.048,
+    cobs: [
+      { ox: -18, oy: -8, rot: 0, vrot: 0.25 },
+      { ox: 0, oy: -16, rot: 1.2, vrot: -0.28 },
+      { ox: 18, oy: -6, rot: 2.4, vrot: 0.22 }
+    ]
+  });
+
+  // Steam burst above cauldron
+  addParticles(startX, startY, '#fef08a', 10);
+  addParticles(startX, startY, '#e0f2fe', 10);
+}
+
+function endPookiesGame(victory, reason) {
+  pookies.paused = true;
+  const modal = document.getElementById('modal-screen');
+  const title = document.getElementById('modal-title');
+  const desc = document.getElementById('modal-desc');
+  const list = document.getElementById('upgrade-list');
+
+  modal.style.display = 'flex';
+  if (victory) {
+    playSound('powerup');
+    title.textContent = '🌽 VICTOIRE : ÉPLUCHETTE POOKIES !';
+    title.style.color = '#facc15';
+  } else {
+    playSound('boom');
+    title.textContent = '🔥 LES POOKIES ONT VOLÉ LE BBQ & FOYER !';
+    title.style.color = '#ef4444';
+  }
+  desc.innerHTML = `${reason}<br><br>Pookies (sans-abris) tués : <strong style="color:#facc15">${pookies.kills} / ${pookies.targetKills}</strong><br>Score total : <strong style="color:#4ade80">${pookies.score} PTS</strong>`;
+  list.innerHTML = '';
+
+  const btnRetry = document.createElement('button');
+  btnRetry.className = 'upg-btn';
+  btnRetry.innerHTML = `<div class="upg-icon">🌽</div><div><div>Rejouer à Épluchette Pookies</div><div style="font-size:12px;color:#94a3b8">Remplir le chaudron d'eau bouillante et de blé d'inde</div></div>`;
+  btnRetry.onclick = () => initPookies();
+  list.appendChild(btnRetry);
+
+  const btnMenu = document.createElement('button');
+  btnMenu.className = 'upg-btn';
+  btnMenu.innerHTML = `<div class="upg-icon">🏠</div><div><div>Retour au Menu Principal</div><div style="font-size:12px;color:#94a3b8">Choisir parmi les 6 jeux All-Stars</div></div>`;
+  btnMenu.onclick = goMenu;
+  list.appendChild(btnMenu);
+}
+
+function updatePookies() {
+  if (pookies.paused) return;
+
+  // Keyboard movement support
+  if (keys['ArrowLeft'] || keys['KeyA']) {
+    pookies.targetX = Math.max(70, pookies.x - pookies.speed * 2);
+  }
+  if (keys['ArrowRight'] || keys['KeyD']) {
+    pookies.targetX = Math.min(W - 70, pookies.x + pookies.speed * 2);
+  }
+
+  // Smoothly move the two chestnut-brown-haired girls along the elevated walkway
+  const dx = pookies.targetX - pookies.x;
+  if (Math.abs(dx) > 1.5) {
+    pookies.x += Math.sign(dx) * Math.min(Math.abs(dx), pookies.speed);
+    pookies.walkFrame += 0.32;
+  } else {
+    pookies.walkFrame += 0.06;
+  }
+
+  if (pookies.tiltAnim > 0) pookies.tiltAnim = Math.max(0, pookies.tiltAnim - 0.055);
+  if (pookies.reloadTimer > 0) pookies.reloadTimer--;
+
+  // Spawn Pookie homeless thieves periodically
+  pookies.spawnTimer--;
+  if (pookies.spawnTimer <= 0 && pookies.thieves.length < 5) {
+    spawnPookieThief();
+    pookies.spawnTimer = Math.max(55, 115 - pookies.kills * 5);
+  }
+
+  // Update flying boiling water & corn cob splashes
+  for (let i = pookies.splashes.length - 1; i >= 0; i--) {
+    const sp = pookies.splashes[i];
+    sp.progress += sp.speed;
+    const t = Math.min(1, sp.progress);
+    // Parabolic arc from overhead cauldron down into the courtyard
+    sp.x = sp.startX + (sp.tx - sp.startX) * t;
+    const arcLift = Math.sin(t * Math.PI) * 95;
+    sp.y = sp.startY + (sp.ty - sp.startY) * t - arcLift;
+    sp.cobs.forEach(c => c.rot += c.vrot);
+
+    if (sp.progress >= 1) {
+      // Splashdown! Create a steaming puddle of boiling water + corn cobs
+      playSound('boom');
+      pookies.puddles.push({
+        x: sp.tx,
+        y: sp.ty,
+        r: 68,
+        life: 1.0
+      });
+      addParticles(sp.tx, sp.ty, '#38bdf8', 18);
+      addParticles(sp.tx, sp.ty, '#facc15', 16);
+      addParticles(sp.tx, sp.ty, '#ffffff', 12);
+      addFlyingEnginePart(sp.tx, sp.ty, ['🌽', '♨️', '💦', '🧈']);
+
+      // Check AoE hit on all Pookies (homeless thieves) near impact!
+      let hitCount = 0;
+      for (let j = pookies.thieves.length - 1; j >= 0; j--) {
+        const th = pookies.thieves[j];
+        const dist = Math.hypot(th.x - sp.tx, th.y - sp.ty);
+        if (dist < 88) {
+          hitCount++;
+          th.hp -= 60;
+          th.scaldTimer = 28;
+          // Knockback away from splash
+          const ka = Math.atan2(th.y - sp.ty, th.x - sp.tx);
+          th.x = Math.max(30, Math.min(W - 30, th.x + Math.cos(ka) * 24));
+          th.y = Math.max(H * 0.34, Math.min(H - 30, th.y + Math.sin(ka) * 24));
+
+          // If he was carrying a BBQ or Foyer, he drops it and it returns home!
+          if (th.carrying) {
+            const dropped = th.carrying;
+            dropped.carrier = null;
+            dropped.x = dropped.homeX;
+            dropped.y = dropped.homeY;
+            th.carrying = null;
+            addFloatingText(th.x, th.y - 38, `🛡️ ${dropped.name.toUpperCase()} SAUVÉ !`, '#4ade80');
+          }
+
+          const screamQuotes = [
+            "AÏE! L'EAU D'BLÉ D'INDE BOUILLANTE!",
+            "Ç'A BRÛLE MES BOBETTES!",
+            "LES FILLES M'ONT ÉBOUILLANTÉ!",
+            "DU BEURRE FONDU À 100°C!"
+          ];
+          th.quote = screamQuotes[Math.floor(Math.random() * screamQuotes.length)];
+          th.quoteTimer = 65;
+
+          if (th.hp <= 0) {
+            // Pookie (homeless thief) eliminated!
+            pookies.kills++;
+            const pts = 100 * hitCount;
+            pookies.score += pts;
+            playSound('cure');
+            addParticles(th.x, th.y, '#ef4444', 16);
+            addParticles(th.x, th.y, '#facc15', 16);
+            addFlyingEnginePart(th.x, th.y, ['🌽', '♨️', '💀', '🛒']);
+            addFloatingText(th.x, th.y - 22, `🌽 POOKIE ÉBOUILLANTÉ ! +${pts} PTS (${pookies.kills}/10)`, '#facc15');
+            pookies.thieves.splice(j, 1);
+            updatePookiesHUD();
+
+            if (pookies.kills >= pookies.targetKills) {
+              endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>10 Pookies (sans-abris voleurs)</strong> avec leur chaudron de blé d'inde ! Le BBQ noir et le foyer de chez Colosse sont sauvés !");
+              return;
+            }
+          } else {
+            addFloatingText(th.x, th.y - 20, '♨️ POOKIE ÉBOUILLANTÉ ! (-60 HP)', '#fb923c');
+          }
+        }
+      }
+      pookies.splashes.splice(i, 1);
+    }
+  }
+
+  // Update steaming boiling puddles on the patio (damage over time to Pookies walking through)
+  for (let i = pookies.puddles.length - 1; i >= 0; i--) {
+    const pd = pookies.puddles[i];
+    pd.life -= 0.012;
+    if (pd.life <= 0) {
+      pookies.puddles.splice(i, 1);
+      continue;
+    }
+    for (let j = pookies.thieves.length - 1; j >= 0; j--) {
+      const th = pookies.thieves[j];
+      if (Math.hypot(th.x - pd.x, th.y - pd.y) < pd.r * 0.78) {
+        th.hp -= 0.45;
+        th.scaldTimer = 6;
+        if (th.hp <= 0) {
+          if (th.carrying) {
+            th.carrying.carrier = null;
+            th.carrying.x = th.carrying.homeX;
+            th.carrying.y = th.carrying.homeY;
+          }
+          pookies.kills++;
+          pookies.score += 100;
+          playSound('cure');
+          addFlyingEnginePart(th.x, th.y, ['🌽', '♨️', '💀']);
+          addFloatingText(th.x, th.y - 20, `🌽 POOKIE CUIT DANS L'EAU CHAUDE ! (${pookies.kills}/10)`, '#facc15');
+          pookies.thieves.splice(j, 1);
+          updatePookiesHUD();
+          if (pookies.kills >= pookies.targetKills) {
+            endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>10 Pookies (sans-abris voleurs)</strong> avec leur chaudron de blé d'inde !");
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // Update Pookie homeless thieves
+  for (let i = pookies.thieves.length - 1; i >= 0; i--) {
+    const th = pookies.thieves[i];
+    th.walkPhase += 0.18;
+    if (th.scaldTimer > 0) th.scaldTimer--;
+    if (th.quoteTimer > 0) th.quoteTimer--;
+
+    if (!th.carrying) {
+      // Find a target BBQ or Foyer that isn't stolen
+      if (!th.targetObj || th.targetObj.stolen || (th.targetObj.carrier && th.targetObj.carrier !== th)) {
+        const free = pookies.targets.filter(t => !t.stolen && !t.carrier);
+        th.targetObj = free.length > 0 ? free[0] : pookies.targets.find(t => !t.stolen);
+      }
+      if (th.targetObj) {
+        const a = Math.atan2(th.targetObj.y - th.y, th.targetObj.x - th.x);
+        th.x += Math.cos(a) * th.speed;
+        th.y += Math.sin(a) * th.speed;
+
+        if (!th.targetObj.carrier && Math.hypot(th.targetObj.x - th.x, th.targetObj.y - th.y) < 28) {
+          th.carrying = th.targetObj;
+          th.targetObj.carrier = th;
+          th.quote = `HAHA! J'ME SAUVE AVEC LE ${th.targetObj.name.toUpperCase()}!`;
+          th.quoteTimer = 95;
+          playSound('hit');
+          addFloatingText(th.x, th.y - 30, `🚨 UN POOKIE VOLE LE ${th.targetObj.name.toUpperCase()} !`, '#ef4444');
+        }
+      }
+    } else {
+      // Carrying the BBQ or Foyer toward the bottom exit!
+      const exitX = th.x < W * 0.5 ? 20 : W - 20;
+      const exitY = H - 18;
+      const a = Math.atan2(exitY - th.y, exitX - th.x);
+      th.x += Math.cos(a) * (th.speed * 0.68);
+      th.y += Math.sin(a) * (th.speed * 0.68);
+      th.carrying.x = th.x;
+      th.carrying.y = th.y - 22;
+
+      if (th.y > H - 26 || th.x < 24 || th.x > W - 24) {
+        // Stolen!
+        th.carrying.stolen = true;
+        th.carrying.carrier = null;
+        pookies.lives--;
+        playSound('boom');
+        addFloatingText(W * 0.5, H * 0.5, `😱 UN POOKIE A VOLÉ LE ${th.carrying.name.toUpperCase()} !`, '#ef4444');
+        pookies.thieves.splice(i, 1);
+        updatePookiesHUD();
+
+        if (pookies.lives <= 0) {
+          endPookiesGame(false, "Les Pookies (sans-abris voleurs) ont réussi à voler le BBQ noir et les foyers de la cour de chez Colosse !");
+          return;
+        }
+      }
+    }
+  }
+}
+
+// Helper to draw the BBQ Noir 3 brûleurs and the Foyer/Brûleur Martin au propane
+function drawColosseYardEquipment(ctx, item) {
+  ctx.save();
+  ctx.translate(item.x, item.y);
+
+  if (item.id === 'bbq') {
+    // Black 3-Burner BBQ on wheels (from photo 1 & 3!)
+    // Wheels & Cabinet
+    ctx.fillStyle = '#090d16';
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 2;
+    ctx.fillRect(-28, -10, 56, 38);
+    ctx.strokeRect(-28, -10, 56, 38);
+    // Side shelves
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-44, -12, 16, 8);
+    ctx.fillRect(28, -12, 16, 8);
+    // Silver control panel + 3 knobs
+    ctx.fillStyle = '#cbd5e1';
+    ctx.fillRect(-28, -14, 56, 8);
+    ctx.fillStyle = '#0f172a';
+    for (const kx of [-16, 0, 16]) {
+      ctx.beginPath(); ctx.arc(kx, -10, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    // Open black lid + silver handle
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.roundRect(-28, -36, 56, 22, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-18, -32); ctx.lineTo(18, -32);
+    ctx.stroke();
+    // Hot-dog buns & sausages grilling on the rack (Photo 1 & 2!)
+    ctx.fillStyle = '#fde047';
+    for (let bx = -22; bx <= 18; bx += 8) {
+      ctx.fillRect(bx, -24, 6, 4);
+    }
+    ctx.fillStyle = '#dc2626';
+    for (let sx = -18; sx <= 14; sx += 10) {
+      ctx.fillRect(sx, -17, 8, 3);
+    }
+    // Label
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 BBQ COLOSSE', 0, 40);
+  } else if (item.id === 'foyer_propane') {
+    // Flattened brown cardboard underneath + White Propane Tank + Black 4-legged cast-iron Corn Burner (Photo 3!)
+    ctx.fillStyle = '#b45309';
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(-34, 4, 60, 22, 3);
+    ctx.fill();
+    ctx.stroke();
+
+    // White propane cylinder behind burner
+    ctx.fillStyle = '#f8fafc';
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(-30, -24, 22, 28, 7);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(-25, -30, 12, 6);
+
+    // Black 4-legged cast-iron propane burner frame
+    ctx.strokeStyle = '#090d16';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.moveTo(-14, -4); ctx.lineTo(-20, 20);
+    ctx.moveTo(18, -4); ctx.lineTo(24, 20);
+    ctx.moveTo(-6, -2); ctx.lineTo(-8, 22);
+    ctx.moveTo(10, -2); ctx.lineTo(12, 22);
+    ctx.stroke();
+
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(-16, -12, 36, 9);
+    // Blue & orange propane flames
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(-4, -14, 5, 0, Math.PI * 2);
+    ctx.arc(8, -14, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.arc(2, -18, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 FOYER PROPANE', 2, 36);
+  } else {
+    // Outdoor Backyard Firepit / Foyer
+    ctx.fillStyle = '#27272a';
+    ctx.strokeStyle = '#090d16';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 28, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Glowing logs & fire
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-14, -2, 28, 6);
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.moveTo(-14, 2);
+    ctx.lineTo(-4, -20 - Math.sin(Date.now() * 0.015) * 4);
+    ctx.lineTo(4, -6);
+    ctx.lineTo(10, -18 - Math.cos(Date.now() * 0.015) * 4);
+    ctx.lineTo(16, 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 FOYER COUR', 0, 32);
+  }
+
+  ctx.restore();
+}
+
+// Helper to draw the Two Chestnut-Brown-Haired Girls ("Deux filles aux cheveux châtain-brun") carrying the giant boiling corn stockpot overhead!
+function drawTwoPookiesWithCauldron(ctx, x, y, tilt = 0, walkFrame = 0) {
+  ctx.save();
+  ctx.translate(x, y);
+
+  const legBounce = Math.sin(walkFrame) * 3.5;
+
+  // --- LEFT GIRL: FILLE #1 (Cheveux châtain-brun ondulés, lunettes claires, t-shirt blanc "DINER", jeans noirs, tatouage avant-bras — Photo 1 & 2!) ---
+  ctx.save();
+  ctx.translate(-34, 0);
+  // Black jeans legs
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(-8, 12, 7, 20 + legBounce);
+  ctx.fillRect(1, 12, 7, 20 - legBounce);
+  // White sneakers
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(-9, 30 + legBounce, 9, 5);
+  ctx.fillRect(1, 30 - legBounce, 9, 5);
+  // White "DINER" T-Shirt torso
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-11, -10, 22, 24, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#1e293b';
+  ctx.font = '900 5.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('DINER', 0, 2);
+  // Raised arms holding cauldron + forearm tattoo
+  ctx.strokeStyle = '#fbd38d';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(-8, -6); ctx.lineTo(6, -26);
+  ctx.moveTo(8, -6); ctx.lineTo(18, -26);
+  ctx.stroke();
+  // Forearm tattoo detail (Photo 1!)
+  ctx.fillStyle = '#334155';
+  ctx.beginPath(); ctx.arc(13, -15, 2.2, 0, Math.PI * 2); ctx.fill();
+  // Head + Chestnut-Brown Wavy Hair ("cheveux châtain-brun") + Clear Glasses (Photo 2!)
+  ctx.fillStyle = '#5c3a21'; // Deep chestnut-brown crown
+  ctx.beginPath(); ctx.arc(0, -19, 12.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#854d0e'; // Warm châtain-brun waves
+  ctx.beginPath();
+  ctx.arc(-9.5, -12, 7.5, 0, Math.PI * 2);
+  ctx.arc(9.5, -12, 7.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fbd38d';
+  ctx.beginPath(); ctx.arc(0, -18, 9.5, 0, Math.PI * 2); ctx.fill();
+  // Clear-frame glasses
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1.6;
+  ctx.strokeRect(-7, -21, 6, 4.5);
+  ctx.strokeRect(1, -21, 6, 4.5);
+  ctx.restore();
+
+  // --- RIGHT GIRL: FILLE #2 (Deuxième fille aux cheveux châtain-brun qui transporte le côté droit du chaudron en hauteur!) ---
+  ctx.save();
+  ctx.translate(34, 0);
+  // Dark jeans legs
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(-8, 12, 7, 20 - legBounce);
+  ctx.fillRect(1, 12, 7, 20 + legBounce);
+  // White sneakers
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(-9, 30 - legBounce, 9, 5);
+  ctx.fillRect(1, 30 + legBounce, 9, 5);
+  // Top torso
+  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-11, -10, 22, 24, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '900 5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('COLOSSE', 0, 2);
+  // Raised arms holding cauldron
+  ctx.strokeStyle = '#fbd38d';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(-8, -6); ctx.lineTo(-18, -26);
+  ctx.moveTo(8, -6); ctx.lineTo(-6, -26);
+  ctx.stroke();
+  // Head + Chestnut-Brown Hair ("cheveux châtain-brun")
+  ctx.fillStyle = '#6b4423';
+  ctx.beginPath();
+  ctx.arc(0, -19, 12.5, 0, Math.PI * 2);
+  ctx.arc(-9, -12, 7, 0, Math.PI * 2);
+  ctx.arc(9, -12, 7, 0, Math.PI * 2);
+  ctx.arc(0, -30, 5.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fbd38d';
+  ctx.beginPath(); ctx.arc(0, -18, 9.5, 0, Math.PI * 2); ctx.fill();
+  // Eyes & smile
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-3.5, -19, 1.5, 0, Math.PI * 2);
+  ctx.arc(3.5, -19, 1.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // --- GIANT SHINY ALUMINUM CORN STOCKPOT HELD HIGH OVERHEAD (Photo 3!) ---
+  ctx.save();
+  ctx.translate(0, -40);
+  ctx.rotate(tilt * 0.48);
+
+  // Side loop handles
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.arc(-28, -2, 6, Math.PI * 0.5, Math.PI * 1.5);
+  ctx.arc(28, -2, 6, -Math.PI * 0.5, Math.PI * 0.5);
+  ctx.stroke();
+
+  // Metallic aluminum cylindrical body
+  const potGrad = ctx.createLinearGradient(-28, 0, 28, 0);
+  potGrad.addColorStop(0, '#94a3b8');
+  potGrad.addColorStop(0.35, '#f8fafc');
+  potGrad.addColorStop(0.7, '#cbd5e1');
+  potGrad.addColorStop(1, '#64748b');
+  ctx.fillStyle = potGrad;
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(-28, -20, 56, 38, 5);
+  ctx.fill();
+  ctx.stroke();
+
+  // Boiling water & bright yellow corn on the cob sticking out the top!
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.ellipse(0, -20, 27, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Ears of yellow corn ("blé d'inde") bobbing in the boiling water
+  ctx.fillStyle = '#facc15';
+  ctx.strokeStyle = '#ca8a04';
+  ctx.lineWidth = 1.5;
+  for (const [cx, cy, crot] of [[-14, -23, -0.3], [0, -25, 0.1], [14, -23, 0.35]]) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(crot);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 9, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Rising white steam puffs
+  ctx.fillStyle = 'rgba(255,255,255,0.75)';
+  const steamOff = (Date.now() * 0.03) % 14;
+  ctx.beginPath();
+  ctx.arc(-10, -30 - steamOff, 5, 0, Math.PI * 2);
+  ctx.arc(10, -34 - steamOff * 0.7, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '900 8px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('EAU 100°C + 🌽', 0, 2);
+  ctx.restore();
+
+  // Label badge underneath the Two Girls
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.beginPath();
+  ctx.roundRect(-64, 36, 128, 17, 6);
+  ctx.fill();
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('👯‍♀️ LES 2 FILLES (CHAUDRON)', 0, 48);
+
+  ctx.restore();
+}
+
+// Helper to draw a "Pookie" (surnom d'un sans-abri voleur de BBQ et de foyer)
+function drawHomelessThief(ctx, th) {
+  ctx.save();
+  ctx.translate(th.x, th.y);
+
+  const step = Math.sin(th.walkPhase) * 4;
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 22, 16, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Boots & Ragged Pants
+  ctx.fillStyle = '#1c1917';
+  ctx.fillRect(-9, 8, 7, 14 + step);
+  ctx.fillRect(2, 8, 7, 14 - step);
+
+  // Tattered Jacket / Hoodie with patches
+  ctx.fillStyle = th.scaldTimer > 0 ? '#ef4444' : th.coatColor;
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(-14, -12, 28, 24, 7);
+  ctx.fill();
+  ctx.stroke();
+  // Patch on jacket
+  ctx.fillStyle = '#a16207';
+  ctx.fillRect(-9, -4, 7, 7);
+
+  // Head + Scruffy Beard + Knit Tuque
+  ctx.fillStyle = th.scaldTimer > 0 ? '#fca5a5' : '#e0ac69';
+  ctx.beginPath();
+  ctx.arc(0, -21, 10, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Messy scruffy beard
+  ctx.fillStyle = '#44403c';
+  ctx.beginPath();
+  ctx.arc(0, -18, 9.5, 0.15, Math.PI - 0.15);
+  ctx.fill();
+
+  // Knit Tuque (Beanie)
+  ctx.fillStyle = th.beanieColor;
+  ctx.beginPath();
+  ctx.arc(0, -24, 10.5, Math.PI, 0);
+  ctx.fill();
+  ctx.stroke();
+
+  // Eyes
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(-3.5, -22, 2.2, 0, Math.PI * 2);
+  ctx.arc(3.5, -22, 2.2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(-3.5, -22, 1.1, 0, Math.PI * 2);
+  ctx.arc(3.5, -22, 1.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Name badge "POOKIE (VOLEUR)"
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(-32, 22, 64, 13);
+  ctx.fillStyle = '#fb923c';
+  ctx.font = '900 8.5px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🛒 POOKIE', 0, 31);
+
+  // HP Bar above head
+  ctx.fillStyle = 'rgba(15,23,42,0.85)';
+  ctx.fillRect(-20, -40, 40, 6);
+  ctx.fillStyle = th.hp > 50 ? '#eab308' : '#ef4444';
+  ctx.fillRect(-19, -39, 38 * Math.max(0, th.hp / th.maxHp), 4);
+
+  // Speech bubble if active
+  if (th.quoteTimer > 0 && th.quote) {
+    ctx.font = '800 9.5px sans-serif';
+    const tw = ctx.measureText(th.quote).width + 12;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = th.scaldTimer > 0 ? '#ef4444' : '#facc15';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(-tw / 2, -60, tw, 17, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'center';
+    ctx.fillText(th.quote, 0, -48);
+  }
+
+  ctx.restore();
+}
+
+function drawPookies() {
+  // 1. SUMMER SKY & SOREL-TRACY BACKDROP (from Photo 1!)
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H * 0.28);
+  skyGrad.addColorStop(0, '#38bdf8');
+  skyGrad.addColorStop(1, '#bae6fd');
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H * 0.28);
+
+  // Red & White Radio Tower in the distance (Photo 1!)
+  const towerX = W * 0.28;
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(towerX - 6, H * 0.22); ctx.lineTo(towerX, 24);
+  ctx.moveTo(towerX + 6, H * 0.22); ctx.lineTo(towerX, 24);
+  ctx.stroke();
+  ctx.strokeStyle = '#ffffff';
+  for (let ty = 36; ty < H * 0.20; ty += 12) {
+    ctx.beginPath(); ctx.moveTo(towerX - 4, ty); ctx.lineTo(towerX + 4, ty); ctx.stroke();
+  }
+
+  // Red brick Sorel apartment buildings behind the fence (Photo 1 & 2!)
+  ctx.fillStyle = '#9a3412';
+  ctx.fillRect(0, H * 0.12, W * 0.42, H * 0.16);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(10, H * 0.16, W * 0.18, 6); // White balcony railing
+
+  // Big Lush Green Tree in center-back (Photo 1, 2, 3!)
+  ctx.fillStyle = '#15803d';
+  ctx.beginPath();
+  ctx.arc(W * 0.48, H * 0.14, 75, 0, Math.PI * 2);
+  ctx.arc(W * 0.38, H * 0.17, 58, 0, Math.PI * 2);
+  ctx.arc(W * 0.58, H * 0.16, 62, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#166534';
+  ctx.beginPath();
+  ctx.arc(W * 0.46, H * 0.18, 52, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 2. BLACK WOODEN PRIVACY FENCE ("Clôture en bois noir" — Photo 1 & 2)
+  ctx.fillStyle = '#18181b';
+  ctx.strokeStyle = '#090d16';
+  ctx.lineWidth = 2;
+  ctx.fillRect(0, H * 0.20, W * 0.68, H * 0.14);
+  for (let fx = 0; fx < W * 0.68; fx += 18) {
+    ctx.strokeRect(fx, H * 0.20, 16, H * 0.14);
+  }
+
+  // 3. BEIGE VINYL-SIDED COLOSSE BUILDING WALL ON THE RIGHT (Photo 1 & 3!)
+  ctx.fillStyle = '#e7e5cd';
+  ctx.strokeStyle = '#a8a29e';
+  ctx.lineWidth = 1;
+  ctx.fillRect(W * 0.64, H * 0.06, W * 0.36, H * 0.32);
+  for (let sy = H * 0.07; sy < H * 0.38; sy += 9) {
+    ctx.beginPath();
+    ctx.moveTo(W * 0.64, sy);
+    ctx.lineTo(W, sy);
+    ctx.stroke();
+  }
+  // Open back doorway into Colosse under renovation (Photo 3!)
+  ctx.fillStyle = '#1c1917';
+  ctx.strokeStyle = '#57534e';
+  ctx.lineWidth = 3;
+  ctx.fillRect(W * 0.75, H * 0.18, 44, H * 0.20);
+  ctx.strokeRect(W * 0.75, H * 0.18, 44, H * 0.20);
+
+  // 3 Wheelie Bins against the beige wall (Brown, Blue, Black — Photo 3!)
+  for (const [bx, bcol] of [[W * 0.65, '#78350f'], [W * 0.685, '#2563eb'], [W * 0.72, '#1e293b']]) {
+    ctx.fillStyle = bcol;
+    ctx.fillRect(bx, H * 0.28, 22, 34);
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(bx, H * 0.28, 22, 34);
+  }
+
+  // 4. CONCRETE PATIO COURTYARD & GREEN GRASS PATCH WITH "MARTIN" BOX (Photo 3!)
+  const patioGrad = ctx.createLinearGradient(0, H * 0.34, 0, H);
+  patioGrad.addColorStop(0, '#9ca3af');
+  patioGrad.addColorStop(1, '#6b7280');
+  ctx.fillStyle = patioGrad;
+  ctx.fillRect(0, H * 0.34, W, H * 0.66);
+
+  // Green lawn patch on bottom-right (Photo 3!)
+  ctx.fillStyle = '#15803d';
+  ctx.beginPath();
+  ctx.moveTo(W * 0.56, H);
+  ctx.quadraticCurveTo(W * 0.65, H * 0.66, W, H * 0.60);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // "Martin" cardboard box on the concrete step on the right (Photo 3!)
+  ctx.fillStyle = '#d97706';
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2;
+  ctx.fillRect(W - 68, H * 0.43, 46, 30);
+  ctx.strokeRect(W - 68, H * 0.43, 46, 30);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(W - 68, H * 0.43, 46, 9);
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 7px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MARTIN', W - 45, H * 0.43 + 7);
+
+  // 5. LEFT GAZEBO & ROUND GLASS CORN-ROAST PATIO TABLE (Photo 1 & 2!)
+  // Dark grey metal gazebo frame
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 5;
+  ctx.strokeRect(10, H * 0.18, W * 0.34, H * 0.22);
+  // Black wicker sofa + yellow cushion inside gazebo (Photo 2!)
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(24, H * 0.31, 70, 26);
+  ctx.fillStyle = '#eab308';
+  ctx.fillRect(76, H * 0.32, 12, 12);
+
+  // Round glass patio table with corn bowls, French's mustard, Hellmann's mayo & stacked black plates (Photo 1 & 2!)
+  const tblX = W * 0.16, tblY = H * 0.46;
+  ctx.fillStyle = 'rgba(224, 242, 254, 0.45)';
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(tblX, tblY, 48, 24, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Bowl of yellow corn cobs on table
+  ctx.fillStyle = '#cbd5e1';
+  ctx.beginPath(); ctx.arc(tblX - 14, tblY - 6, 13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#facc15';
+  ctx.beginPath(); ctx.arc(tblX - 14, tblY - 8, 10, 0, Math.PI * 2); ctx.fill();
+  // Yellow mustard bottle & white mayo jar
+  ctx.fillStyle = '#facc15';
+  ctx.fillRect(tblX - 4, tblY + 2, 6, 12);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(tblX - 12, tblY + 3, 6, 11);
+  // Stack of black plates
+  ctx.fillStyle = '#090d16';
+  ctx.beginPath(); ctx.ellipse(tblX + 16, tblY + 4, 14, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+  // 6. ELEVATED BLACK METAL BALCONY / PASSERELLE AT TOP (Photo 3!) WHERE THE TWO GIRLS WALK IN HEIGHT!
+  const balY = pookies.y + 32;
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  ctx.fillRect(20, balY, W - 40, 10);
+  ctx.strokeStyle = '#090d16';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(20, balY - 24); ctx.lineTo(W - 20, balY - 24);
+  ctx.moveTo(20, balY); ctx.lineTo(W - 20, balY);
+  for (let rx = 28; rx <= W - 28; rx += 36) {
+    ctx.moveTo(rx, balY - 24);
+    ctx.lineTo(rx, balY);
+  }
+  ctx.stroke();
+
+  // 7. BOILING WATER PUDDLES ON THE PATIO
+  for (const pd of pookies.puddles) {
+    ctx.save();
+    ctx.globalAlpha = pd.life * 0.65;
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.ellipse(pd.x, pd.y, pd.r, pd.r * 0.48, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#e0f2fe';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🌽♨️', pd.x, pd.y);
+    ctx.restore();
+  }
+
+  // 8. DRAW THE 3 TARGET ITEMS (BBQ Noir, Foyer Propane Martin, Foyer Cour)
+  for (const item of pookies.targets) {
+    if (!item.stolen) {
+      drawColosseYardEquipment(ctx, item);
+    }
+  }
+
+  // 9. DRAW THE POOKIES (HOMELESS BBQ & FOYER THIEVES)
+  for (const th of pookies.thieves) {
+    drawHomelessThief(ctx, th);
+  }
+
+  // 10. DRAW THE TWO CHESTNUT-BROWN-HAIRED GIRLS CARRYING THE BOILING CORN CAULDRON OVERHEAD!
+  drawTwoPookiesWithCauldron(ctx, pookies.x, pookies.y, pookies.tiltAnim, pookies.walkFrame);
+
+  // 11. DRAW IN-FLIGHT BOILING WATER & CORN COB SPLASHES
+  for (const sp of pookies.splashes) {
+    ctx.save();
+    ctx.translate(sp.x, sp.y);
+    // Torrent of boiling water
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.85)';
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#e0f2fe';
+    ctx.beginPath();
+    ctx.arc(-5, -5, 10, 0, Math.PI * 2);
+    ctx.fill();
+    // Spinning golden corn cobs inside the splash!
+    for (const c of sp.cobs) {
+      ctx.save();
+      ctx.translate(c.ox, c.oy);
+      ctx.rotate(c.rot);
+      ctx.fillStyle = '#facc15';
+      ctx.strokeStyle = '#ca8a04';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 12, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  // 12. BOTTOM INSTRUCTION BANNER & QUICK-THROW BUTTON
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.roundRect(W * 0.5 - 165, H - 58, 330, 44, 14);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#fde047';
+  ctx.font = '900 13px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('👆 TOUCHE UN POOKIE POUR VERSER LE CHAUDRON !', W * 0.5, H - 38);
+  ctx.fillStyle = '#cbd5e1';
+  ctx.font = '700 10.5px sans-serif';
+  ctx.fillText(`Objectif : ${pookies.kills} / 10 Pookies ébouillantés • Protège le BBQ & Foyer !`, W * 0.5, H - 22);
+}
+
+// =========================================================
+// INPUT HANDLERS (Touch & Mouse)
+// =========================================================
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (currentMode === 'flappy' && (e.code === 'Space' || e.code === 'ArrowUp')) {
+    flapRoc();
+  } else if (currentMode === 'doom' && e.code === 'Space') {
+    fireDoomPatchGun();
+  } else if (currentMode === 'cta6' && (e.code === 'Space' || e.code === 'KeyE')) {
+    performCTA6Action();
+  } else if (currentMode === 'pookies' && e.code === 'Space') {
+    // Throw at nearest thief or center courtyard
+    const nearest = pookies.thieves[0];
+    throwPookiesCauldron(nearest ? nearest.x : pookies.x, nearest ? nearest.y : H * 0.58);
+  }
+});
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+function getPos(e) {
+  if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  if (e.changedTouches && e.changedTouches.length > 0) return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+  return { x: e.clientX, y: e.clientY };
+}
+
+canvas.addEventListener('pointerdown', e => {
+  initAudio();
+  const p = getPos(e);
+
+  if (currentMode === 'survival' && !surv.paused) {
+    surv.joy.active = true;
+    surv.joy.startX = p.x;
+    surv.joy.startY = p.y;
+    surv.joy.curX = p.x;
+    surv.joy.curY = p.y;
+    surv.joy.dx = 0;
+    surv.joy.dy = 0;
+  } else if (currentMode === 'angry') {
+    if (angry.activeBeshoi && !angry.activeBeshoi.boosted) {
+      angry.activeBeshoi.boosted = true;
+      const vx = angry.activeBeshoi.velocity.x * 1.38;
+      const vy = angry.activeBeshoi.velocity.y;
+      Body.setVelocity(angry.activeBeshoi, { x: vx, y: vy - 2 });
+
+      for (const offset of [-5, 5]) {
+        const clone = Bodies.circle(
+          angry.activeBeshoi.position.x,
+          angry.activeBeshoi.position.y + offset * 3,
+          15,
+          { density: 0.004, restitution: 0.4, friction: 0.4 }
+        );
+        Body.setVelocity(clone, { x: vx * 0.95, y: vy + offset });
+        angry.clones.push(clone);
+        World.add(angry.world, clone);
+      }
+      playSound('powerup');
+      addFloatingText(angry.activeBeshoi.position.x, angry.activeBeshoi.position.y - 25, '🔥 TRIPLE BESHOÏ DEPLOY !', '#38bdf8');
+      return;
+    }
+
+    if (angry.peekingTower) {
+      angry.peekingTower = false;
+      document.getElementById('btn-cam').textContent = '🔭 VOIR TOUR';
+    }
+    angry.introTimer = 0;
+
+    const worldX = p.x + angry.camX;
+    const worldY = p.y;
+    if (!angry.activeBeshoi && angry.beshoisLeft > 0) {
+      if (Math.hypot(worldX - angry.slingX, worldY - angry.slingY) < 115) {
+        angry.dragging = true;
+        angry.dragX = worldX;
+        angry.dragY = worldY;
+      }
+    }
+  } else if (currentMode === 'flappy') {
+    flapRoc();
+  } else if (currentMode === 'doom' && !doom.paused) {
+    // Left half of screen = Move/Turn Joystick; Right half of screen = Fire Medical Extension Patch!
+    if (p.x > W * 0.54) {
+      fireDoomPatchGun();
+    } else {
+      doom.moveJoy.active = true;
+      doom.moveJoy.startX = p.x;
+      doom.moveJoy.startY = p.y;
+      doom.moveJoy.curX = p.x;
+      doom.moveJoy.curY = p.y;
+      doom.moveJoy.forward = 0;
+      doom.moveJoy.turn = 0;
+    }
+  } else if (currentMode === 'cta6' && !cta.paused) {
+    if (p.x > W * 0.56) {
+      performCTA6Action();
+    } else {
+      cta.joy.active = true;
+      cta.joy.startX = p.x;
+      cta.joy.startY = p.y;
+      cta.joy.curX = p.x;
+      cta.joy.curY = p.y;
+      cta.joy.dx = 0;
+      cta.joy.dy = 0;
+      cta.joy.forward = 0;
+      cta.joy.turn = 0;
+    }
+  } else if (currentMode === 'pookies' && !pookies.paused) {
+    throwPookiesCauldron(p.x, Math.max(H * 0.36, p.y));
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  const p = getPos(e);
+  if (currentMode === 'survival' && surv.joy && surv.joy.active) {
+    const dx = p.x - surv.joy.startX;
+    const dy = p.y - surv.joy.startY;
+    const dist = Math.hypot(dx, dy);
+    const maxR = 42;
+    const clamped = Math.min(dist, maxR);
+    const a = Math.atan2(dy, dx);
+    surv.joy.curX = surv.joy.startX + Math.cos(a) * clamped;
+    surv.joy.curY = surv.joy.startY + Math.sin(a) * clamped;
+    surv.joy.dx = (clamped / maxR) * Math.cos(a);
+    surv.joy.dy = (clamped / maxR) * Math.sin(a);
+  } else if (currentMode === 'angry' && angry.dragging) {
+    const worldX = p.x + angry.camX;
+    const worldY = p.y;
+    const dx = worldX - angry.slingX;
+    const dy = worldY - angry.slingY;
+    const dist = Math.min(110, Math.hypot(dx, dy));
+    const a = Math.atan2(dy, dx);
+    angry.dragX = angry.slingX + Math.cos(a) * dist;
+    angry.dragY = angry.slingY + Math.sin(a) * dist;
+  } else if (currentMode === 'doom' && doom.moveJoy && doom.moveJoy.active) {
+    const dx = p.x - doom.moveJoy.startX;
+    const dy = p.y - doom.moveJoy.startY;
+    const maxR = 44;
+    const dist = Math.hypot(dx, dy);
+    const clamped = Math.min(dist, maxR);
+    const a = Math.atan2(dy, dx);
+    doom.moveJoy.curX = doom.moveJoy.startX + Math.cos(a) * clamped;
+    doom.moveJoy.curY = doom.moveJoy.startY + Math.sin(a) * clamped;
+    doom.moveJoy.turn = Math.max(-1, Math.min(1, dx / maxR));
+    doom.moveJoy.forward = Math.max(-1, Math.min(1, -dy / maxR));
+  } else if (currentMode === 'cta6' && cta.joy && cta.joy.active) {
+    const dx = p.x - cta.joy.startX;
+    const dy = p.y - cta.joy.startY;
+    const maxR = 44;
+    const dist = Math.hypot(dx, dy);
+    const clamped = Math.min(dist, maxR);
+    const a = Math.atan2(dy, dx);
+    cta.joy.curX = cta.joy.startX + Math.cos(a) * clamped;
+    cta.joy.curY = cta.joy.startY + Math.sin(a) * clamped;
+    cta.joy.dx = (clamped / maxR) * Math.cos(a);
+    cta.joy.dy = (clamped / maxR) * Math.sin(a);
+    cta.joy.turn = Math.max(-1, Math.min(1, dx / maxR));
+    cta.joy.forward = Math.max(-1, Math.min(1, -dy / maxR));
+  } else if (currentMode === 'pookies' && !pookies.paused) {
+    pookies.targetX = Math.max(70, Math.min(W - 70, p.x));
+  }
+});
+
+window.addEventListener('pointerup', () => {
+  if (currentMode === 'survival' && surv.joy) {
+    surv.joy.active = false;
+    surv.joy.dx = 0;
+    surv.joy.dy = 0;
+  } else if (currentMode === 'angry' && angry.dragging) {
+    angry.dragging = false;
+    const pullDist = Math.hypot(angry.slingX - angry.dragX, angry.slingY - angry.dragY);
+    if (pullDist > 14) {
+      playSound('launch');
+      angry.beshoisLeft--;
+      const bBody = Bodies.circle(angry.dragX, angry.dragY, 19, {
+        density: 0.0045,
+        restitution: 0.42,
+        friction: 0.5
+      });
+      bBody.boosted = false;
+      World.add(angry.world, bBody);
+      Body.setVelocity(bBody, {
+        x: (angry.slingX - angry.dragX) * 0.30,
+        y: (angry.slingY - angry.dragY) * 0.28
+      });
+      angry.activeBeshoi = bBody;
+      angry.settleTimer = 0;
+    }
+  } else if (currentMode === 'doom' && doom.moveJoy) {
+    doom.moveJoy.active = false;
+    doom.moveJoy.forward = 0;
+    doom.moveJoy.turn = 0;
+  } else if (currentMode === 'cta6' && cta.joy) {
+    cta.joy.active = false;
+    cta.joy.dx = 0;
+    cta.joy.dy = 0;
+    cta.joy.forward = 0;
+    cta.joy.turn = 0;
+  }
+});
+
+function goMenu() {
+  currentMode = 'menu';
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('modal-screen').style.display = 'none';
+  document.getElementById('menu-screen').style.display = 'flex';
+}
+document.getElementById('btn-menu').onclick = goMenu;
+document.getElementById('btn-cam').onclick = () => {
+  if (currentMode === 'angry' && !angry.activeBeshoi) {
+    angry.peekingTower = !angry.peekingTower;
+    angry.introTimer = 0;
+    document.getElementById('btn-cam').textContent = angry.peekingTower ? '🏹 VOIR FRONDE' : '🔭 VOIR TOUR';
+  }
+};
+document.getElementById('start-survival').onclick = () => { initAudio(); initSurvival(); };
+document.getElementById('start-angry').onclick = () => { initAudio(); angry.score = 0; initAngry(0); };
+document.getElementById('start-flappy').onclick = () => { initAudio(); initFlappy(); };
+document.getElementById('start-doom').onclick = () => { initAudio(); initDoom(); };
+document.getElementById('start-cta6').onclick = () => { initAudio(); initCTA6(); };
+document.getElementById('start-pookies').onclick = () => { initAudio(); initPookies(); };
+
+// =========================================================
+// MAIN LOOP
+// =========================================================
+function loop() {
+  requestAnimationFrame(loop);
+  if (currentMode === 'survival') {
+    updateSurvival();
+    drawSurvival();
+  } else if (currentMode === 'angry') {
+    updateAngry();
+    drawAngry();
+  } else if (currentMode === 'flappy') {
+    updateFlappy();
+    drawFlappy();
+  } else if (currentMode === 'doom') {
+    updateDoom();
+    drawDoom();
+  } else if (currentMode === 'cta6') {
+    updateCTA6();
+    drawCTA6();
+  } else if (currentMode === 'pookies') {
+    updatePookies();
+    drawPookies();
+  } else {
+    return;
+  }
+
+  const camOffsetX = (currentMode === 'angry' && angry.camX) ? angry.camX : 0;
+  ctx.save();
+  ctx.translate(-camOffsetX, 0);
+
+  for (let i = flyingParts.length - 1; i >= 0; i--) {
+    const fp = flyingParts[i];
+    fp.x += fp.vx;
+    fp.y += fp.vy;
+    fp.vy += 0.28;
+    fp.rot += fp.vrot;
+    fp.life -= 0.028;
+    if (fp.life <= 0) { flyingParts.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = fp.life;
+    ctx.translate(fp.x, fp.y);
+    ctx.rotate(fp.rot);
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(fp.icon, 0, 0);
+    ctx.restore();
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.life -= 0.035;
+    if (pt.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = pt.life;
+    ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  for (let i = floatingTexts.length - 1; i >= 0; i--) {
+    const ft = floatingTexts[i];
+    ft.y -= 1.1; ft.life -= 0.022;
+    if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+    ctx.globalAlpha = ft.life;
+    ctx.fillStyle = ft.color;
+    ctx.font = '900 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(ft.text, ft.x, ft.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
