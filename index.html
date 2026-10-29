@@ -160,8 +160,8 @@
       </div>
       <div class="mode-info">
         <h2>6. Épluchette Pookies</h2>
-        <p>Dans la <strong>cour de chez Colosse</strong>, <strong>deux filles aux cheveux châtain-brun</strong> transportent en hauteur un <strong>chaudron d'eau chaude et de blé d'inde</strong> : lance son contenu sur les <strong>Pookies (sans-abris voleurs de BBQ et foyer)</strong> — 10 tués pour gagner !</p>
-        <span class="tag tag-corn">🌽 Chaudron d'Eau Chaude • 10 Pookies Tués</span>
+        <p>Dans la <strong>cour de chez Colosse</strong>, <strong>deux filles aux cheveux châtain-brun</strong> transportent en hauteur un <strong>chaudron d'eau chaude et de blé d'inde</strong> : ébouillante <strong>25 Pookies</strong> (attention au <strong>Boss Pookie Géant</strong> après 10 morts) !</p>
+        <span class="tag tag-corn">🌽 Chaudron 100°C • 25 Pookies + Boss Géant</span>
       </div>
     </div>
   </div>
@@ -4356,7 +4356,7 @@ function drawCTA6() {
 // un gros chaudron d'eau chaude avec des blés d'inde dedans et
 // lancent son contenu sur les "Pookies" (surnom des sans-abris
 // voleurs de BBQ et de foyer dans la cour de chez Colosse) !
-// Objectif : 10 Pookies (sans-abris) tués pour gagner !
+// Objectif : 25 Pookies tués pour gagner + BOSS POOKIE GÉANT après 10 morts !
 // =========================================================
 const pookies = {
   x: 0,
@@ -4364,7 +4364,9 @@ const pookies = {
   y: 128,
   speed: 6.5,
   kills: 0,
-  targetKills: 10,
+  targetKills: 25,
+  bossSpawned: false,
+  bossAlertTimer: 0,
   score: 0,
   lives: 3, // 3 équipements (BBQ / Foyers) avant défaite
   tiltAnim: 0,
@@ -4390,13 +4392,15 @@ function initPookies() {
   document.getElementById('hud-net-bar').style.display = 'block';
   document.getElementById('btn-cam').style.display = 'none';
   document.getElementById('hud-net-icon').textContent = '🌽';
-  document.getElementById('hud-net-label').textContent = 'Pookies (0/10)';
+  document.getElementById('hud-net-label').textContent = 'Pookies (0/25)';
 
   pookies.x = W * 0.5;
   pookies.targetX = W * 0.5;
   pookies.y = 126;
   pookies.kills = 0;
-  pookies.targetKills = 10;
+  pookies.targetKills = 25;
+  pookies.bossSpawned = false;
+  pookies.bossAlertTimer = 0;
   pookies.score = 0;
   pookies.lives = 3;
   pookies.tiltAnim = 0;
@@ -4448,7 +4452,7 @@ function initPookies() {
   spawnPookieThief();
   spawnPookieThief();
   updatePookiesHUD();
-  showToast('🌽 ÉPLUCHETTE POOKIES : Ébouillante 10 Pookies (sans-abris voleurs de BBQ & Foyer) !');
+  showToast('🌽 ÉPLUCHETTE POOKIES : Ébouillante 25 Pookies (Attention au BOSS POOKIE après 10 morts) !');
 }
 
 function updatePookiesHUD() {
@@ -4489,21 +4493,57 @@ function spawnPookieThief() {
   const beanieColors = ['#991b1b', '#1e3a8a', '#365314', '#713f12', '#171717'];
 
   pookies.thieves.push({
+    isBoss: false,
+    scale: 1.0,
     x: sx,
     y: sy,
     vx: 0,
     vy: 0,
     hp: 100,
     maxHp: 100,
-    speed: 1.05 + Math.random() * 0.45 + pookies.kills * 0.05,
+    speed: 1.05 + Math.random() * 0.45 + Math.min(18, pookies.kills) * 0.035,
     targetObj: tgt,
     carrying: null,
+    hitsWhileCarrying: 0,
     coatColor: colors[Math.floor(Math.random() * colors.length)],
     beanieColor: beanieColors[Math.floor(Math.random() * beanieColors.length)],
     quote: quotes[Math.floor(Math.random() * quotes.length)],
     quoteTimer: 110,
     scaldTimer: 0,
     walkPhase: Math.random() * 10
+  });
+}
+
+// Spawn the Giant BOSS POOKIE after 10 Pookies are killed!
+function spawnBossPookie() {
+  const availableTargets = pookies.targets.filter(t => !t.stolen);
+  const tgt = availableTargets.length > 0 ? availableTargets[0] : pookies.targets[0];
+
+  pookies.bossSpawned = true;
+  pookies.bossAlertTimer = 180; // 3 seconds of flashing Boss warning banner!
+  playSound('boom');
+  playSound('shotgun');
+  showToast('🚨👑 ALERTE BOSS : BIG POOKIE GÉANT DÉBARQUE DANS LA COUR DE COLOSSE !');
+
+  pookies.thieves.push({
+    isBoss: true,
+    scale: 2.15, // Géant ! Plus de 2x la taille des autres Pookies
+    x: W * 0.5,
+    y: H - 30,
+    vx: 0,
+    vy: 0,
+    hp: 650,     // 6.5x plus résistant qu'un Pookie normal !
+    maxHp: 650,
+    speed: 1.15,
+    targetObj: tgt,
+    carrying: null,
+    hitsWhileCarrying: 0, // Il faut 3 chaudrons directs pour lui faire lâcher le BBQ !
+    coatColor: '#1c1917',
+    beanieColor: '#dc2626',
+    quote: "👑 MOÉ C'EST BIG POOKIE ! M'A VOLER TOUTE LA COUR DE COLOSSE !",
+    quoteTimer: 180,
+    scaldTimer: 0,
+    walkPhase: 0
   });
 }
 
@@ -4547,6 +4587,12 @@ function throwPookiesCauldron(tx, ty) {
   addParticles(startX, startY, '#e0f2fe', 10);
 }
 
+function checkPookiesBossTrigger() {
+  if (pookies.kills >= 10 && !pookies.bossSpawned) {
+    spawnBossPookie();
+  }
+}
+
 function endPookiesGame(victory, reason) {
   pookies.paused = true;
   const modal = document.getElementById('modal-screen');
@@ -4583,6 +4629,8 @@ function endPookiesGame(victory, reason) {
 function updatePookies() {
   if (pookies.paused) return;
 
+  if (pookies.bossAlertTimer > 0) pookies.bossAlertTimer--;
+
   // Keyboard movement support
   if (keys['ArrowLeft'] || keys['KeyA']) {
     pookies.targetX = Math.max(70, pookies.x - pookies.speed * 2);
@@ -4605,9 +4653,9 @@ function updatePookies() {
 
   // Spawn Pookie homeless thieves periodically
   pookies.spawnTimer--;
-  if (pookies.spawnTimer <= 0 && pookies.thieves.length < 5) {
+  if (pookies.spawnTimer <= 0 && pookies.thieves.length < 6) {
     spawnPookieThief();
-    pookies.spawnTimer = Math.max(55, 115 - pookies.kills * 5);
+    pookies.spawnTimer = Math.max(48, 110 - Math.min(20, pookies.kills) * 3);
   }
 
   // Update flying boiling water & corn cob splashes
@@ -4635,58 +4683,93 @@ function updatePookies() {
       addParticles(sp.tx, sp.ty, '#ffffff', 12);
       addFlyingEnginePart(sp.tx, sp.ty, ['🌽', '♨️', '💦', '🧈']);
 
-      // Check AoE hit on all Pookies (homeless thieves) near impact!
+      // Check AoE hit on all Pookies (and Giant Boss Pookie) near impact!
       let hitCount = 0;
       for (let j = pookies.thieves.length - 1; j >= 0; j--) {
         const th = pookies.thieves[j];
+        const hitRadius = th.isBoss ? 115 : 88;
         const dist = Math.hypot(th.x - sp.tx, th.y - sp.ty);
-        if (dist < 88) {
+        if (dist < hitRadius) {
           hitCount++;
           th.hp -= 60;
           th.scaldTimer = 28;
-          // Knockback away from splash
+          // Knockback away from splash (Boss Pookie resists knockback!)
           const ka = Math.atan2(th.y - sp.ty, th.x - sp.tx);
-          th.x = Math.max(30, Math.min(W - 30, th.x + Math.cos(ka) * 24));
-          th.y = Math.max(H * 0.34, Math.min(H - 30, th.y + Math.sin(ka) * 24));
+          const kbDist = th.isBoss ? 8 : 24;
+          th.x = Math.max(35, Math.min(W - 35, th.x + Math.cos(ka) * kbDist));
+          th.y = Math.max(H * 0.34, Math.min(H - 30, th.y + Math.sin(ka) * kbDist));
 
-          // If he was carrying a BBQ or Foyer, he drops it and it returns home!
+          // If carrying a BBQ or Foyer: normal Pookie drops immediately; Boss Pookie requires 3 direct hits!
           if (th.carrying) {
-            const dropped = th.carrying;
-            dropped.carrier = null;
-            dropped.x = dropped.homeX;
-            dropped.y = dropped.homeY;
-            th.carrying = null;
-            addFloatingText(th.x, th.y - 38, `🛡️ ${dropped.name.toUpperCase()} SAUVÉ !`, '#4ade80');
+            th.hitsWhileCarrying = (th.hitsWhileCarrying || 0) + 1;
+            const needed = th.isBoss ? 3 : 1;
+            if (th.hitsWhileCarrying >= needed) {
+              const dropped = th.carrying;
+              dropped.carrier = null;
+              dropped.x = dropped.homeX;
+              dropped.y = dropped.homeY;
+              th.carrying = null;
+              th.hitsWhileCarrying = 0;
+              addFloatingText(th.x, th.y - 48, `🛡️ ${dropped.name.toUpperCase()} SAUVÉ !`, '#4ade80');
+            } else if (th.isBoss) {
+              addFloatingText(th.x, th.y - 54, `👑 BOSS TIENT BON (${th.hitsWhileCarrying}/3 CHAUDRONS POUR LÂCHER) !`, '#fde047');
+            }
           }
 
-          const screamQuotes = [
-            "AÏE! L'EAU D'BLÉ D'INDE BOUILLANTE!",
-            "Ç'A BRÛLE MES BOBETTES!",
-            "LES FILLES M'ONT ÉBOUILLANTÉ!",
-            "DU BEURRE FONDU À 100°C!"
-          ];
-          th.quote = screamQuotes[Math.floor(Math.random() * screamQuotes.length)];
-          th.quoteTimer = 65;
+          if (th.isBoss) {
+            const bossQuotes = [
+              "👑 TON CHAUDRON D'BLÉ D'INDE ME CHATOUILLE !",
+              "👑 MOÉ J'PRENDS MON BAIN À 100°C !",
+              "👑 M'A PARTIR AVEC LE BBQ PIS LE GAZEBO !",
+              "👑 ARGH ! MA BARBE SENT LE BEURRE FONDU !"
+            ];
+            th.quote = bossQuotes[Math.floor(Math.random() * bossQuotes.length)];
+            th.quoteTimer = 85;
+          } else {
+            const screamQuotes = [
+              "AÏE! L'EAU D'BLÉ D'INDE BOUILLANTE!",
+              "Ç'A BRÛLE MES BOBETTES!",
+              "LES FILLES M'ONT ÉBOUILLANTÉ!",
+              "DU BEURRE FONDU À 100°C!"
+            ];
+            th.quote = screamQuotes[Math.floor(Math.random() * screamQuotes.length)];
+            th.quoteTimer = 65;
+          }
 
           if (th.hp <= 0) {
-            // Pookie (homeless thief) eliminated!
+            // If Boss or Pookie was still carrying an item on death, return it home!
+            if (th.carrying) {
+              th.carrying.carrier = null;
+              th.carrying.x = th.carrying.homeX;
+              th.carrying.y = th.carrying.homeY;
+              th.carrying = null;
+            }
             pookies.kills++;
-            const pts = 100 * hitCount;
+            const pts = th.isBoss ? 1000 : 100 * hitCount;
             pookies.score += pts;
             playSound('cure');
-            addParticles(th.x, th.y, '#ef4444', 16);
-            addParticles(th.x, th.y, '#facc15', 16);
-            addFlyingEnginePart(th.x, th.y, ['🌽', '♨️', '💀', '🛒']);
-            addFloatingText(th.x, th.y - 22, `🌽 POOKIE ÉBOUILLANTÉ ! +${pts} PTS (${pookies.kills}/10)`, '#facc15');
+            if (th.isBoss) playSound('powerup');
+            addParticles(th.x, th.y, '#ef4444', th.isBoss ? 36 : 16);
+            addParticles(th.x, th.y, '#facc15', th.isBoss ? 36 : 16);
+            addFlyingEnginePart(th.x, th.y, th.isBoss ? ['👑', '🌽', '♨️', '💀', '🔥', '🛒'] : ['🌽', '♨️', '💀', '🛒']);
+            addFloatingText(
+              th.x,
+              th.y - 28,
+              th.isBoss
+                ? `👑🏆 BOSS POOKIE GÉANT VAINCU ! +1000 PTS (${pookies.kills}/${pookies.targetKills})`
+                : `🌽 POOKIE ÉBOUILLANTÉ ! +${pts} PTS (${pookies.kills}/${pookies.targetKills})`,
+              '#facc15'
+            );
             pookies.thieves.splice(j, 1);
             updatePookiesHUD();
+            checkPookiesBossTrigger();
 
             if (pookies.kills >= pookies.targetKills) {
-              endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>10 Pookies (sans-abris voleurs)</strong> avec leur chaudron de blé d'inde ! Le BBQ noir et le foyer de chez Colosse sont sauvés !");
+              endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>25 Pookies (incluant le Boss Pookie Géant)</strong> avec leur chaudron de blé d'inde ! Le BBQ noir et le foyer de chez Colosse sont sauvés !");
               return;
             }
           } else {
-            addFloatingText(th.x, th.y - 20, '♨️ POOKIE ÉBOUILLANTÉ ! (-60 HP)', '#fb923c');
+            addFloatingText(th.x, th.y - (th.isBoss ? 42 : 20), th.isBoss ? `👑 BOSS TOUCHÉ ! (${Math.ceil(th.hp)}/${th.maxHp} HP)` : '♨️ POOKIE ÉBOUILLANTÉ ! (-60 HP)', '#fb923c');
           }
         }
       }
@@ -4704,8 +4787,9 @@ function updatePookies() {
     }
     for (let j = pookies.thieves.length - 1; j >= 0; j--) {
       const th = pookies.thieves[j];
-      if (Math.hypot(th.x - pd.x, th.y - pd.y) < pd.r * 0.78) {
-        th.hp -= 0.45;
+      const puddleHitR = th.isBoss ? pd.r * 0.95 : pd.r * 0.78;
+      if (Math.hypot(th.x - pd.x, th.y - pd.y) < puddleHitR) {
+        th.hp -= th.isBoss ? 0.30 : 0.45;
         th.scaldTimer = 6;
         if (th.hp <= 0) {
           if (th.carrying) {
@@ -4714,14 +4798,23 @@ function updatePookies() {
             th.carrying.y = th.carrying.homeY;
           }
           pookies.kills++;
-          pookies.score += 100;
+          pookies.score += th.isBoss ? 1000 : 100;
           playSound('cure');
-          addFlyingEnginePart(th.x, th.y, ['🌽', '♨️', '💀']);
-          addFloatingText(th.x, th.y - 20, `🌽 POOKIE CUIT DANS L'EAU CHAUDE ! (${pookies.kills}/10)`, '#facc15');
+          if (th.isBoss) playSound('powerup');
+          addFlyingEnginePart(th.x, th.y, th.isBoss ? ['👑', '🌽', '♨️', '💀'] : ['🌽', '♨️', '💀']);
+          addFloatingText(
+            th.x,
+            th.y - 24,
+            th.isBoss
+              ? `👑 BOSS POOKIE CUIT DANS L'EAU CHAUDE ! (${pookies.kills}/${pookies.targetKills})`
+              : `🌽 POOKIE CUIT DANS L'EAU CHAUDE ! (${pookies.kills}/${pookies.targetKills})`,
+            '#facc15'
+          );
           pookies.thieves.splice(j, 1);
           updatePookiesHUD();
+          checkPookiesBossTrigger();
           if (pookies.kills >= pookies.targetKills) {
-            endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>10 Pookies (sans-abris voleurs)</strong> avec leur chaudron de blé d'inde !");
+            endPookiesGame(true, "Les deux filles aux cheveux châtain-brun ont ébouillanté <strong>25 Pookies (incluant le Boss Pookie Géant)</strong> avec leur chaudron de blé d'inde !");
             return;
           }
         }
@@ -4729,10 +4822,10 @@ function updatePookies() {
     }
   }
 
-  // Update Pookie homeless thieves
+  // Update Pookie homeless thieves (and Boss Pookie)
   for (let i = pookies.thieves.length - 1; i >= 0; i--) {
     const th = pookies.thieves[i];
-    th.walkPhase += 0.18;
+    th.walkPhase += th.isBoss ? 0.14 : 0.18;
     if (th.scaldTimer > 0) th.scaldTimer--;
     if (th.quoteTimer > 0) th.quoteTimer--;
 
@@ -4747,24 +4840,28 @@ function updatePookies() {
         th.x += Math.cos(a) * th.speed;
         th.y += Math.sin(a) * th.speed;
 
-        if (!th.targetObj.carrier && Math.hypot(th.targetObj.x - th.x, th.targetObj.y - th.y) < 28) {
+        if (!th.targetObj.carrier && Math.hypot(th.targetObj.x - th.x, th.targetObj.y - th.y) < (th.isBoss ? 38 : 28)) {
           th.carrying = th.targetObj;
+          th.hitsWhileCarrying = 0;
           th.targetObj.carrier = th;
-          th.quote = `HAHA! J'ME SAUVE AVEC LE ${th.targetObj.name.toUpperCase()}!`;
-          th.quoteTimer = 95;
+          th.quote = th.isBoss
+            ? `👑 HAHA! BIG POOKIE EMBARQUE LE ${th.targetObj.name.toUpperCase()} SOUS SON BRAS!`
+            : `HAHA! J'ME SAUVE AVEC LE ${th.targetObj.name.toUpperCase()}!`;
+          th.quoteTimer = 110;
           playSound('hit');
-          addFloatingText(th.x, th.y - 30, `🚨 UN POOKIE VOLE LE ${th.targetObj.name.toUpperCase()} !`, '#ef4444');
+          addFloatingText(th.x, th.y - 38, `🚨 ${th.isBoss ? 'LE BOSS POOKIE' : 'UN POOKIE'} VOLE LE ${th.targetObj.name.toUpperCase()} !`, '#ef4444');
         }
       }
     } else {
-      // Carrying the BBQ or Foyer toward the bottom exit!
+      // Carrying the BBQ or Foyer toward the bottom exit! (Boss moves faster with heavy equipment)
       const exitX = th.x < W * 0.5 ? 20 : W - 20;
       const exitY = H - 18;
       const a = Math.atan2(exitY - th.y, exitX - th.x);
-      th.x += Math.cos(a) * (th.speed * 0.68);
-      th.y += Math.sin(a) * (th.speed * 0.68);
+      const carrySpeedMult = th.isBoss ? 0.80 : 0.68;
+      th.x += Math.cos(a) * (th.speed * carrySpeedMult);
+      th.y += Math.sin(a) * (th.speed * carrySpeedMult);
       th.carrying.x = th.x;
-      th.carrying.y = th.y - 22;
+      th.carrying.y = th.y - (th.isBoss ? 38 : 22);
 
       if (th.y > H - 26 || th.x < 24 || th.x > W - 24) {
         // Stolen!
@@ -4772,7 +4869,7 @@ function updatePookies() {
         th.carrying.carrier = null;
         pookies.lives--;
         playSound('boom');
-        addFloatingText(W * 0.5, H * 0.5, `😱 UN POOKIE A VOLÉ LE ${th.carrying.name.toUpperCase()} !`, '#ef4444');
+        addFloatingText(W * 0.5, H * 0.5, `😱 ${th.isBoss ? 'LE BOSS POOKIE' : 'UN POOKIE'} A VOLÉ LE ${th.carrying.name.toUpperCase()} !`, '#ef4444');
         pookies.thieves.splice(i, 1);
         updatePookiesHUD();
 
@@ -5093,15 +5190,27 @@ function drawTwoPookiesWithCauldron(ctx, x, y, tilt = 0, walkFrame = 0) {
   ctx.restore();
 }
 
-// Helper to draw a "Pookie" (surnom d'un sans-abri voleur de BBQ et de foyer)
+// Helper to draw a "Pookie" (or the GIANT BOSS POOKIE when th.isBoss === true!)
 function drawHomelessThief(ctx, th) {
   ctx.save();
   ctx.translate(th.x, th.y);
 
+  const sc = th.scale || 1.0;
+  ctx.scale(sc, sc);
+
   const step = Math.sin(th.walkPhase) * 4;
 
+  // Boss Fiery Aura & Heavy Shadow
+  if (th.isBoss) {
+    const pulse = Math.sin(Date.now() * 0.01) * 3;
+    ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+    ctx.beginPath();
+    ctx.arc(0, -6, 26 + pulse, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
   ctx.beginPath();
   ctx.ellipse(0, 22, 16, 6, 0, 0, Math.PI * 2);
   ctx.fill();
@@ -5111,78 +5220,133 @@ function drawHomelessThief(ctx, th) {
   ctx.fillRect(-9, 8, 7, 14 + step);
   ctx.fillRect(2, 8, 7, 14 - step);
 
-  // Tattered Jacket / Hoodie with patches
+  // Tattered Jacket / Boss Trenchcoat with shoulder pads
   ctx.fillStyle = th.scaldTimer > 0 ? '#ef4444' : th.coatColor;
-  ctx.strokeStyle = '#0f172a';
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = th.isBoss ? '#fde047' : '#0f172a';
+  ctx.lineWidth = th.isBoss ? 2.5 : 2;
   ctx.beginPath();
-  ctx.roundRect(-14, -12, 28, 24, 7);
+  ctx.roundRect(th.isBoss ? -17 : -14, -12, th.isBoss ? 34 : 28, 24, 7);
   ctx.fill();
   ctx.stroke();
-  // Patch on jacket
-  ctx.fillStyle = '#a16207';
-  ctx.fillRect(-9, -4, 7, 7);
+
+  // Patch on jacket (or Gold Boss Chain!)
+  if (th.isBoss) {
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, -6, 8, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.font = '900 6px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('BOSS', 0, 7);
+  } else {
+    ctx.fillStyle = '#a16207';
+    ctx.fillRect(-9, -4, 7, 7);
+  }
 
   // Head + Scruffy Beard + Knit Tuque
   ctx.fillStyle = th.scaldTimer > 0 ? '#fca5a5' : '#e0ac69';
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(0, -21, 10, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
 
-  // Messy scruffy beard
-  ctx.fillStyle = '#44403c';
+  // Messy scruffy beard (Bigger bushier beard for Boss Pookie)
+  ctx.fillStyle = th.isBoss ? '#1c1917' : '#44403c';
   ctx.beginPath();
-  ctx.arc(0, -18, 9.5, 0.15, Math.PI - 0.15);
+  ctx.arc(0, -18, th.isBoss ? 11 : 9.5, 0.1, Math.PI - 0.1);
   ctx.fill();
 
-  // Knit Tuque (Beanie)
+  // Knit Tuque (Beanie) + Golden Scrap-Metal Crown for Boss Pookie!
   ctx.fillStyle = th.beanieColor;
   ctx.beginPath();
   ctx.arc(0, -24, 10.5, Math.PI, 0);
   ctx.fill();
   ctx.stroke();
 
-  // Eyes
-  ctx.fillStyle = '#ffffff';
+  if (th.isBoss) {
+    // Golden Crown on top of Boss Pookie's tuque!
+    ctx.fillStyle = '#facc15';
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-9, -30);
+    ctx.lineTo(-9, -39);
+    ctx.lineTo(-4, -34);
+    ctx.lineTo(0, -41);
+    ctx.lineTo(4, -34);
+    ctx.lineTo(9, -39);
+    ctx.lineTo(9, -30);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  // Eyes (Glowing red eyes for Boss Pookie!)
+  ctx.fillStyle = th.isBoss ? '#ef4444' : '#ffffff';
   ctx.beginPath();
   ctx.arc(-3.5, -22, 2.2, 0, Math.PI * 2);
   ctx.arc(3.5, -22, 2.2, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = th.isBoss ? '#fef08a' : '#0f172a';
   ctx.beginPath();
   ctx.arc(-3.5, -22, 1.1, 0, Math.PI * 2);
   ctx.arc(3.5, -22, 1.1, 0, Math.PI * 2);
   ctx.fill();
 
-  // Name badge "POOKIE (VOLEUR)"
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-  ctx.fillRect(-32, 22, 64, 13);
-  ctx.fillStyle = '#fb923c';
-  ctx.font = '900 8.5px sans-serif';
+  // Undo scale before drawing crisp UI labels & HP bars so text stays ultra-legible!
+  ctx.restore();
+
+  ctx.save();
+  ctx.translate(th.x, th.y);
+  const topOffset = th.isBoss ? -88 : -40;
+  const botOffset = th.isBoss ? 48 : 22;
+
+  // Name badge
+  ctx.fillStyle = th.isBoss ? 'rgba(153, 27, 27, 0.95)' : 'rgba(15, 23, 42, 0.85)';
+  const badgeW = th.isBoss ? 116 : 64;
+  ctx.fillRect(-badgeW / 2, botOffset, badgeW, th.isBoss ? 16 : 13);
+  if (th.isBoss) {
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-badgeW / 2, botOffset, badgeW, 16);
+  }
+  ctx.fillStyle = th.isBoss ? '#fde047' : '#fb923c';
+  ctx.font = th.isBoss ? '900 10px sans-serif' : '900 8.5px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('🛒 POOKIE', 0, 31);
+  ctx.fillText(th.isBoss ? '👑 BOSS POOKIE GÉANT' : '🛒 POOKIE', 0, botOffset + (th.isBoss ? 12 : 9));
 
   // HP Bar above head
-  ctx.fillStyle = 'rgba(15,23,42,0.85)';
-  ctx.fillRect(-20, -40, 40, 6);
-  ctx.fillStyle = th.hp > 50 ? '#eab308' : '#ef4444';
-  ctx.fillRect(-19, -39, 38 * Math.max(0, th.hp / th.maxHp), 4);
+  const barW = th.isBoss ? 86 : 40;
+  const barH = th.isBoss ? 9 : 6;
+  ctx.fillStyle = 'rgba(15,23,42,0.9)';
+  ctx.fillRect(-barW / 2, topOffset, barW, barH);
+  ctx.fillStyle = th.isBoss ? '#dc2626' : (th.hp > 50 ? '#eab308' : '#ef4444');
+  ctx.fillRect(-barW / 2 + 1, topOffset + 1, (barW - 2) * Math.max(0, th.hp / th.maxHp), barH - 2);
+  if (th.isBoss) {
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-barW / 2, topOffset, barW, barH);
+  }
 
   // Speech bubble if active
   if (th.quoteTimer > 0 && th.quote) {
-    ctx.font = '800 9.5px sans-serif';
-    const tw = ctx.measureText(th.quote).width + 12;
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.strokeStyle = th.scaldTimer > 0 ? '#ef4444' : '#facc15';
-    ctx.lineWidth = 1.5;
+    ctx.font = th.isBoss ? '900 11px sans-serif' : '800 9.5px sans-serif';
+    const tw = ctx.measureText(th.quote).width + 14;
+    const bubbleY = topOffset - 22;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+    ctx.strokeStyle = th.isBoss ? '#fde047' : (th.scaldTimer > 0 ? '#ef4444' : '#facc15');
+    ctx.lineWidth = th.isBoss ? 2 : 1.5;
     ctx.beginPath();
-    ctx.roundRect(-tw / 2, -60, tw, 17, 6);
+    ctx.roundRect(-tw / 2, bubbleY, tw, 19, 6);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = th.isBoss ? '#fde047' : '#ffffff';
     ctx.textAlign = 'center';
-    ctx.fillText(th.quote, 0, -48);
+    ctx.fillText(th.quote, 0, bubbleY + 13);
   }
 
   ctx.restore();
@@ -5365,7 +5529,7 @@ function drawPookies() {
     }
   }
 
-  // 9. DRAW THE POOKIES (HOMELESS BBQ & FOYER THIEVES)
+  // 9. DRAW THE POOKIES (HOMELESS BBQ & FOYER THIEVES + GIANT BOSS POOKIE)
   for (const th of pookies.thieves) {
     drawHomelessThief(ctx, th);
   }
@@ -5403,6 +5567,31 @@ function drawPookies() {
     ctx.restore();
   }
 
+  // 11b. BOSS POOKIE TOP HEALTH BANNER (When Boss Pookie is active in the yard!)
+  const activeBoss = pookies.thieves.find(t => t.isBoss);
+  if (activeBoss) {
+    const bw = Math.min(340, W - 28);
+    const bx = W * 0.5 - bw / 2;
+    const by = H - 104;
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, 38, 10);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#fde047';
+    ctx.font = '900 11.5px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`👑 BOSS POOKIE GÉANT : ${Math.max(0, Math.ceil(activeBoss.hp))} / ${activeBoss.maxHp} HP`, W * 0.5, by + 15);
+
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(bx + 14, by + 21, bw - 28, 10);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(bx + 14, by + 21, (bw - 28) * Math.max(0, activeBoss.hp / activeBoss.maxHp), 10);
+  }
+
   // 12. BOTTOM INSTRUCTION BANNER & QUICK-THROW BUTTON
   ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
   ctx.strokeStyle = '#facc15';
@@ -5417,7 +5606,7 @@ function drawPookies() {
   ctx.fillText('👆 TOUCHE UN POOKIE POUR VERSER LE CHAUDRON !', W * 0.5, H - 38);
   ctx.fillStyle = '#cbd5e1';
   ctx.font = '700 10.5px sans-serif';
-  ctx.fillText(`Objectif : ${pookies.kills} / 10 Pookies ébouillantés • Protège le BBQ & Foyer !`, W * 0.5, H - 22);
+  ctx.fillText(`Objectif : ${pookies.kills} / 25 Pookies ébouillantés • Boss après 10 morts !`, W * 0.5, H - 22);
 }
 
 // =========================================================
